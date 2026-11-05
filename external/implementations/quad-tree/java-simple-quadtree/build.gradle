@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Use JUnit test framework
+    testImplementation 'junit:junit:4.12'
+}
+
+task runPerformanceReport(type: JavaExec){
+	mainClass = "com.pelletier.PerformanceReport"
+	classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
+         
+}

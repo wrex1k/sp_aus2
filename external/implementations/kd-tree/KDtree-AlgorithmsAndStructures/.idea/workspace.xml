@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ffdd57f7-c7dc-4941-ab44-9bd5d75b1bab" name="Changes" comment="Fixed things">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DataTypes/GPSsuradnice.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/DataTypes/GPSsuradnice.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DataTypes/Point.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/DataTypes/Point.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JUnit5 Test Class" />
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="2nFgLY0hCjOQpl8gO0eifrYmdaN" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.App.executor&quot;: &quot;Run&quot;,
+    &quot;Application.GUIMain.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;Downloaded.Files.Path.Enabled&quot;: &quot;true&quot;,
+    &quot;JUnit.KDtreeTest.executor&quot;: &quot;Debug&quot;,
+    &quot;Repository.Attach.Annotations&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.JavaDocs&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Sources&quot;: &quot;false&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary&quot;: &quot;JUnit5&quot;,
+    &quot;com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit5&quot;: &quot;&quot;,
+    &quot;create.test.in.the.same.root&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/luka3/IdeaProjects/KDsemestralnaFiladelfiNaVylepsenie/KDsemestralnaFiladelfi/KDsemestralna&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Artifacts&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15625&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;Errors&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\luka3\IdeaProjects\KDsemestralna\src" />
+    </key>
+    <key name="CreateTestDialog.Recents.Supers">
+      <recent name="" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\luka3\IdeaProjects\KDsemestralna\Subory" />
+    </key>
+    <key name="CreateTestDialog.RecentsKey">
+      <recent name="Test" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.GUIMain">
+    <configuration name="App" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="GUIApp.App" />
+      <module name="KDsemestralna" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="GUIApp.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="GUIMain" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="GUIApp.GUIMain" />
+      <module name="KDsemestralna" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="GUIApp.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Main" />
+      <module name="KDsemestralna" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="KDtreeTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="KDsemestralna" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="Test.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="Test" />
+      <option name="MAIN_CLASS_NAME" value="Test.KDtreeTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.GUIMain" />
+        <item itemvalue="Application.Main" />
+        <item itemvalue="Application.App" />
+        <item itemvalue="JUnit.KDtreeTest" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="jdk-21.0.2-openjdk-21.0.2-4caba194b151-4f524021" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ffdd57f7-c7dc-4941-ab44-9bd5d75b1bab" name="Changes" comment="" />
+      <created>1728574185318</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1728574185318</updated>
+      <workItem from="1728574188143" duration="626000" />
+      <workItem from="1728583995233" duration="2334000" />
+      <workItem from="1728739802412" duration="7257000" />
+      <workItem from="1728754200474" duration="9873000" />
+      <workItem from="1728920442392" duration="16503000" />
+      <workItem from="1729437093339" duration="7225000" />
+      <workItem from="1729532663983" duration="4922000" />
+      <workItem from="1729782536579" duration="3853000" />
+      <workItem from="1729949368928" duration="25110000" />
+      <workItem from="1730072048322" duration="139000" />
+      <workItem from="1730134517015" duration="42834000" />
+      <workItem from="1730272761130" duration="3487000" />
+      <workItem from="1730554786964" duration="18601000" />
+      <workItem from="1730634475841" duration="20251000" />
+      <workItem from="1730725214267" duration="45881000" />
+      <workItem from="1730880045262" duration="2120000" />
+      <workItem from="1731265734360" duration="662000" />
+      <workItem from="1731338641724" duration="13255000" />
+      <workItem from="1731419889669" duration="789000" />
+      <workItem from="1731482288633" duration="2911000" />
+      <workItem from="1731769927391" duration="50000" />
+      <workItem from="1732470016637" duration="736000" />
+      <workItem from="1733081561469" duration="585000" />
+    </task>
+    <task id="LOCAL-00001" summary="polo funkcne">
+      <option name="closed" value="true" />
+      <created>1729952271914</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1729952271914</updated>
+    </task>
+    <task id="LOCAL-00002" summary="zacanie nelistoveho deltete">
+      <option name="closed" value="true" />
+      <created>1730025348965</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1730025348965</updated>
+    </task>
+    <task id="LOCAL-00003" summary="experimentovanie delete">
+      <option name="closed" value="true" />
+      <created>1730072170519</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1730072170519</updated>
+    </task>
+    <task id="LOCAL-00004" summary="funkcne bez skusania">
+      <option name="closed" value="true" />
+      <created>1730139779142</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1730139779142</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Funkcny delete">
+      <option name="closed" value="true" />
+      <created>1730148313719</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1730148313719</updated>
+    </task>
+    <task id="LOCAL-00006" summary="help">
+      <option name="closed" value="true" />
+      <created>1730238565587</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1730238565587</updated>
+    </task>
+    <task id="LOCAL-00007" summary="oprava duplicit (po odovzdani)">
+      <option name="closed" value="true" />
+      <created>1730555763362</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1730555763362</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Finally fixed">
+      <option name="closed" value="true" />
+      <created>1730587082866</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1730587082868</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Dalsie vylepsenia">
+      <option name="closed" value="true" />
+      <created>1730742702615</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1730742702615</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Opravy">
+      <option name="closed" value="true" />
+      <created>1730827392365</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1730827392366</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Fixed things">
+      <option name="closed" value="true" />
+      <created>1731351653812</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1731351653813</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="CUSTOM_BOOLEAN_PROPERTIES">
+                <map>
+                  <entry key="Show.Git.Branches" value="true" />
+                </map>
+              </option>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="HEAD" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="polo funkcne" />
+    <MESSAGE value="zacanie nelistoveho deltete" />
+    <MESSAGE value="experimentovanie delete" />
+    <MESSAGE value="funkcne bez skusania" />
+    <MESSAGE value="Funkcny delete" />
+    <MESSAGE value="help" />
+    <MESSAGE value="oprava duplicit (po odovzdani)" />
+    <MESSAGE value="Finally fixed" />
+    <MESSAGE value="Dalsie vylepsenia" />
+    <MESSAGE value="Opravy" />
+    <MESSAGE value="Fixed things" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed things" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/Main.java</url>
+          <line>17</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/App.java</url>
+          <line>379</line>
+          <option name="timeStamp" value="53" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/Test/KDtreeTest.java</url>
+          <line>149</line>
+          <option name="timeStamp" value="102" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/App.java</url>
+          <line>334</line>
+          <option name="timeStamp" value="106" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>136</line>
+          <option name="timeStamp" value="111" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>164</line>
+          <option name="timeStamp" value="113" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>150</line>
+          <option name="timeStamp" value="121" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>67</line>
+          <option name="timeStamp" value="129" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/DataTypes/Land.java</url>
+          <line>80</line>
+          <option name="timeStamp" value="133" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/App.java</url>
+          <line>571</line>
+          <option name="timeStamp" value="144" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>76</line>
+          <option name="timeStamp" value="145" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>29</line>
+          <option name="timeStamp" value="146" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/KDtree/KDtree.java</url>
+          <line>92</line>
+          <option name="timeStamp" value="156" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/App.java</url>
+          <line>407</line>
+          <option name="timeStamp" value="158" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>189</line>
+          <option name="timeStamp" value="160" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/CVSFileHandler.java</url>
+          <line>75</line>
+          <option name="timeStamp" value="161" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/Manager.java</url>
+          <line>305</line>
+          <option name="timeStamp" value="162" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/GUIApp/CVSFileHandler.java</url>
+          <line>84</line>
+          <option name="timeStamp" value="163" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="JUnit">
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tester).root.leftChild.leftChild.listOfData.get(0)" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tester).root.leftChild.leftChild.listOfData.get(0)" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="node" />
+        <watch expression="replacementNode.node.parent.listOfData" />
+        <watch expression="replacementNode.node.parent.listOfData" />
+        <watch expression="((KDtreeTest)this).tree" custom="Test.KDtreeTest" />
+        <watch expression="((Data)((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.rightChild.listOfData.get(0)).point" custom="KDtree.KDtree,Test.KDtreeTest,DataTypes.Data" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tester).root.leftChild.leftChild.listOfData.get(0)" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.rightChild" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((Data)((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.leftChild.listOfData.get(0)).point" custom="KDtree.KDtree,Test.KDtreeTest,DataTypes.Data" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.leftChild.listOfData" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.leftChild" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.listOfData.get(0)" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.listOfData.get(0)" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.leftChild.leftChild.rightChild" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="((KDtree.KDtree)((KDtreeTest)this).tree).root.leftChild.listOfData.get(0)" custom="KDtree.KDtree,Test.KDtreeTest" />
+        <watch expression="this.data.get(4).bottomLeft" />
+        <watch expression="random" />
+        <watch expression="replacementNode.node.listOfData" />
+      </configuration>
+      <configuration name="Application">
+        <watch expression="((KDtree.KDtree)this).root.rightChild" custom="KDtree.KDtree" />
+        <watch expression="((KDtree.KDtree)((Measuring)this).tree).root.rightChild.listOfData.get(0)" custom="KDtree.KDtree,Test.Measuring" />
+        <watch expression="((KDtree.KDtree)((Measuring)this).tree).root.rightChild.listOfData.get(0)" custom="KDtree.KDtree,Test.Measuring" />
+        <watch expression="((KDtree.KDtree)((Measuring)this).tree).root.rightChild" custom="KDtree.KDtree,Test.Measuring" />
+        <watch expression="((Measuring)this).tree" custom="Test.Measuring" />
+        <watch expression="pieceOfData" />
+        <watch expression="pieceOfData" />
+        <watch expression="nodes" />
+        <watch expression="nodes" />
+        <watch expression="((KDtree.KDtree)((Measuring)this).tree).root.leftChild" custom="KDtree.KDtree,Test.Measuring" />
+        <watch expression="((KDtree.KDtree)((Measuring)this).tree).root.leftChild" custom="KDtree.KDtree,Test.Measuring" />
+        <watch expression="((KDtree.KDtree)((Measuring)this).tree).root.leftChild" custom="KDtree.KDtree,Test.Measuring" />
+        <watch expression="everything" />
+      </configuration>
+    </watches-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
