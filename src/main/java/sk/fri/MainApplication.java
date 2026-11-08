@@ -1,22 +1,30 @@
 package sk.fri;
 
-import sk.fri.tester.CsvPoint;
-import sk.fri.tester.Area;
+import sk.fri.poi.controller.PoiManagerController;
+import sk.fri.poi.model.PoiManagerModel;
+import sk.fri.poi.model.SpatialStructures;
+import sk.fri.poi.view.ConsoleView;
+import sk.fri.poi.view.PoiManagerView;
 
-import sk.fri.tester.TreeBenchmark;
-import sk.fri.tester.TreeTester;
+import java.nio.file.Path;
 
-import java.util.List;
-
-import static sk.fri.tester.LoadCSV.loadTestPoints;
-import static sk.fri.tester.LoadCSV.loadTestAreas;
-
+/**
+ * Starts the console version of POI Manager.
+ */
 public class MainApplication {
+    /**
+     * Selects a tree and CSV file, then starts the application controller.
+     *
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
-        List<CsvPoint> testPoints = loadTestPoints();
-        List<Area> testAreas = loadTestAreas();
-
-        TreeTester.testTrees(testPoints, testAreas);
-        TreeBenchmark.compareStructures(testPoints, testAreas);
+         PoiManagerView view = new ConsoleView();
+        SpatialStructures structure = view.chooseStructure();
+        Path csvPath = Path.of(view.askCsvPath());
+        PoiManagerModel model = new PoiManagerModel(structure);
+        PoiManagerController controller = new PoiManagerController(model, view, csvPath);
+        if (controller.loadAtStartup()) {
+            controller.run();
+        }
     }
 }
