@@ -1,6 +1,0 @@
-- [KDtree Algorithms and Structures](https://github.com/luka3691/KDtree-AlgorithmsAndStructures)
-- [TinSpin Indexes](https://github.com/tzaeschke/tinspin-indexes)
-- [LocationTech JTS](https://github.com/locationtech/jts)
-- [Varun Pant Quadtree](https://github.com/varunpant/Quadtree)
-- [Alwex QuadTree](https://github.com/alwex/QuadTree)
-- [Java Simple Quadtree](https://github.com/ryanmpelletier/java-simple-quadtree)

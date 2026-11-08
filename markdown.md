@@ -20,4 +20,4 @@ Vlastný K-d strom dosiahol celkový čas 10,833 ms a pri intervalovom vyhľadá
 
 Najvýraznejšie výkonnostné problémy sa prejavili pri vyhľadávaní bodov v implementáciách Alwex QuadTree a Ryan Pelletier QuadTree. Pri Existing external KDTree bolo naopak najpomalšie intervalové vyhľadávanie.
 
-Všetky testované priestorové stromy úspešne prešli kontrolami správnosti intervalového vyhľadávania. Výsledky platia pre použitý dataset a testovacie podmienky; nemusia preto predstavovať všeobecné poradie výkonnosti týchto dátových štruktúr.
+Všetky testované priestorové stromy úspešne prešli kontrolami správnosti intervalového vyhľadávania. Výsledky platia pre použitý dataset a testovacie podmienky.
