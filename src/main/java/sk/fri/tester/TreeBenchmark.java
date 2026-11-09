@@ -43,13 +43,13 @@ public class TreeBenchmark {
             List<Long> findTimes = new ArrayList<>();
             List<Long> areaSearchTimes = new ArrayList<>();
 
-            for (int run = 1; run < WARMUP_RUNS + MEASURED_RUNS; run++) {
+            for (int run = 1; run <= WARMUP_RUNS + MEASURED_RUNS; run++) {
                 SpatialTree<CsvPoint, Point<Double>> tree = TreeTester.get2DTrees().get(i);
                 System.out.println(name + " (run " + run + "/" + (WARMUP_RUNS + MEASURED_RUNS) + ")..");
 
                 RunTimes times = runOnce(tree, points, areas);
 
-                if (run >= WARMUP_RUNS) {
+                if (run > WARMUP_RUNS) {
                     insertTimes.add(times.insertTime());
                     findTimes.add(times.findTime());
                     areaSearchTimes.add(times.areaSearchTime());

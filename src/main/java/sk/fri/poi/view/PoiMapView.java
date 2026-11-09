@@ -27,8 +27,8 @@ public final class PoiMapView extends StackPane {
 
     private static final double LAT = 48.68, LON = 19.70;
     private static final double MIN_ZOOM = 0.65, MAX_ZOOM = 24;
-    private static final Color ACTIVE = Color.web("#397fa8");
-    private static final Color DELETED = Color.web("#ce433e");
+    private static final Color ACTIVE = Color.STEELBLUE;
+    private static final Color DELETED = Color.INDIANRED;
     private static final Color SELECTED = Color.ORANGE;
 
     private final Canvas canvas = new Canvas();

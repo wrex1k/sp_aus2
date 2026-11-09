@@ -9,7 +9,9 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * A point-region tree whose leaves contain two-dimensional k-d trees.
+ * A quadrant tree whose leaves contain two-dimensional k-d trees.
+ * Leaves are split when a new distinct point exceeds their capacity,
+ * up to the maximum quadrant-tree depth.
  *
  * @param <T> type of stored value
  * @param <K> type of coordinates
@@ -18,11 +20,9 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
 
     private static final int LEAF_CAPACITY = 32;
     private static final int MAX_DEPTH = 32;
-
     private final Function<T, Point<K>> pointExtractor;
     private final Function<T, KDPoint<K>> kdPointExtractor;
     private final Comparator<K> comparator;
-
     private QuadKDNode<T, K> root;
 
     /**
@@ -45,9 +45,12 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
 
     /**
      * Inserts an object into the tree.
+     * Objects with the same coordinates are stored together. A full leaf
+     * is split unless the maximum depth has been reached.
      *
      * @param value object to insert
      * @return true if the object was inserted
+     * @throws IllegalArgumentException if the extracted points do not have matching coordinates
      */
     @Override
     public boolean insert(T value) {
@@ -103,6 +106,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      * @param point coordinates of the point to search for
      * @return an Optional containing the objects at the point,
      *         or an empty Optional if the point does not exist
+     * @throws IllegalArgumentException if the point is null
      */
     @Override
     public Optional<List<T>> find(Point<K> point) {
@@ -129,6 +133,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      * @param min minimum coordinates of the range
      * @param max maximum coordinates of the range
      * @return an Optional containing all matching objects
+     * @throws IllegalArgumentException if a bound is null or the minimum exceeds the maximum
      */
     @Override
     public Optional<List<T>> rangeSearch(Point<K> min, Point<K> max) {
@@ -183,6 +188,8 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
 
     /**
      * Splits a leaf and redistributes its values into child nodes.
+     * The old leaf becomes an internal node after all values, including
+     * duplicates, have been inserted into the children's k-d trees.
      *
      * @param node leaf node to split
      */
@@ -219,7 +226,8 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      *
      * @param point two-dimensional point
      * @param kdPoint k-d tree point
-     * @throws IllegalArgumentException if coordinates do not match
+     * @throws IllegalArgumentException if either point is null, the k-d point
+     *         is not two-dimensional, or their coordinates do not match
      */
     private void validatePoint(Point<K> point, KDPoint<K> kdPoint) {
         if (point == null || kdPoint == null
@@ -277,6 +285,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      *
      * @param min minimum coordinates of the range
      * @param max maximum coordinates of the range
+     * @throws IllegalArgumentException if a bound is null or the minimum exceeds the maximum
      */
     private void validateRange(Point<K> min, Point<K> max) {
         if (min == null || max == null

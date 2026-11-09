@@ -41,9 +41,9 @@ public final class ConsoleView implements PoiManagerView {
      * @return the selected CSV path
      */
     public String askCsvPath() {
-        System.out.print("CSV file path (empty = poi.csv): ");
+        System.out.print("CSV file path (empty = src/main/resources/csv/slovakia_nodes.csv): ");
         String path = scanner.nextLine().trim();
-        return path.isEmpty() ? "poi.csv" : path;
+        return path.isEmpty() ? "src/main/resources/csv/slovakia_nodes.csv" : path;
     }
 
     /**

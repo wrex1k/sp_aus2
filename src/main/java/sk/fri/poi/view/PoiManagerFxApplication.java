@@ -9,15 +9,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -57,13 +56,18 @@ public final class PoiManagerFxApplication extends Application {
     private Supplier<List<Poi>> currentQuery;
     private boolean allResults;
 
-    /** Chooses a CSV file and opens the main window. */
+    /** Selects a spatial structure and CSV file before opening the main window. */
     @Override
     public void start(Stage stage) {
         this.stage = stage;
         stage.setTitle("POI Manager");
         stage.setScene(new Scene(new BorderPane(), 1200, 700));
-        controller = new PoiManagerController(new PoiManagerModel(SpatialStructures.KD_TREE));
+        Optional<SpatialStructures> selectedStructure = chooseSpatialStructure(stage);
+        if (selectedStructure.isEmpty()) {
+            Platform.exit();
+            return;
+        }
+        controller = new PoiManagerController(new PoiManagerModel(selectedStructure.get()));
         while (true) {
             Optional<CsvSelection> selection = chooseCsvFile(stage);
             if (selection.isEmpty()) {
@@ -88,35 +92,54 @@ public final class PoiManagerFxApplication extends Application {
         stage.show();
     }
 
+    /** Asks which spatial structure to use before selecting the data file. */
+    private Optional<SpatialStructures> chooseSpatialStructure(Stage owner) {
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(
+                "KD Tree",
+                "KD Tree",
+                "Quad Tree",
+                "Quad KD Tree"
+        );
+        dialog.initOwner(owner);
+        dialog.setTitle("POI Manager");
+        dialog.setHeaderText("Choose a spatial structure");
+        dialog.setContentText("Structure:");
+        return dialog.showAndWait().map(choice -> switch (choice) {
+            case "KD Tree" -> SpatialStructures.KD_TREE;
+            case "Quad Tree" -> SpatialStructures.QUAD_TREE;
+            case "Quad KD Tree" -> SpatialStructures.QUAD_KD_TREE;
+            default -> throw new IllegalStateException("Unknown spatial structure: " + choice);
+        });
+    }
+
     /** Presents the two startup actions and opens the corresponding file chooser. */
     private Optional<CsvSelection> chooseCsvFile(Stage owner) {
-        while (true) {
-            ButtonType create = new ButtonType("New file", ButtonBar.ButtonData.YES);
-            ButtonType open = new ButtonType("Open file", ButtonBar.ButtonData.NO);
-            Dialog<ButtonType> dialog = new Dialog<>();
-            dialog.initOwner(owner);
-            dialog.setTitle("POI Manager");
-            dialog.setHeaderText("Welcome in a POI Manager. Choose an action to start.");
-            dialog.getDialogPane().getButtonTypes().addAll(create, open);
-            dialog.setResultConverter(button -> button);
-            Optional<ButtonType> choice = dialog.showAndWait();
-            if (choice.isEmpty() || (choice.get() != create && choice.get() != open)) {
-                return Optional.empty();
-            }
-            FileChooser chooser = new FileChooser();
-            chooser.setTitle(choice.get() == create ? "New CSV file" : "Open CSV file");
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files", "*.csv"));
-            File selectedFile;
-            if (choice.get() == create) {
-                chooser.setInitialFileName("poi.csv");
-                selectedFile = chooser.showSaveDialog(owner);
-            } else {
-                selectedFile = chooser.showOpenDialog(owner);
-            }
-            if (selectedFile != null) {
-                return Optional.of(new CsvSelection(selectedFile.toPath(), choice.get() == create));
-            }
+        ButtonType create = new ButtonType("New file", ButtonBar.ButtonData.YES);
+        ButtonType open = new ButtonType("Open file", ButtonBar.ButtonData.NO);
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.initOwner(owner);
+        dialog.setTitle("POI Manager");
+        dialog.setHeaderText("Welcome in a POI Manager. Choose an action to start.");
+        dialog.getDialogPane().getButtonTypes().addAll(create, open);
+        dialog.setResultConverter(button -> button);
+        Optional<ButtonType> choice = dialog.showAndWait();
+        if (choice.isEmpty() || (choice.get() != create && choice.get() != open)) {
+            return Optional.empty();
         }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(choice.get() == create ? "New CSV file" : "Open CSV file");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files", "*.csv"));
+        File selectedFile;
+        if (choice.get() == create) {
+            chooser.setInitialFileName("poi.csv");
+            selectedFile = chooser.showSaveDialog(owner);
+        } else {
+            selectedFile = chooser.showOpenDialog(owner);
+        }
+        if (selectedFile == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new CsvSelection(selectedFile.toPath(), choice.get() == create));
     }
 
     /** Creates the table, map and operation controls. */
@@ -144,7 +167,7 @@ public final class PoiManagerFxApplication extends Application {
         SplitPane content = new SplitPane(table, map);
         content.setDividerPositions(0.65);
         BorderPane root = new BorderPane();
-        root.setTop(new VBox(createOptionsMenu(), controls));
+        root.setTop(new VBox(createMenuBar(), controls));
         root.setCenter(content);
         root.setBottom(status);
         BorderPane.setMargin(content, new Insets(0, 8, 8, 8));
@@ -152,28 +175,15 @@ public final class PoiManagerFxApplication extends Application {
         stage.getScene().setRoot(root);
     }
 
-    /** Adds file actions and the runtime spatial-structure selector to the menu bar. */
-    private MenuBar createOptionsMenu() {
+    /** Adds file actions to the menu bar. */
+    private MenuBar createMenuBar() {
         Menu file = new Menu("File");
         MenuItem openExisting = new MenuItem("Open file");
         openExisting.setOnAction(event -> openExistingFile());
         MenuItem createNew = new MenuItem("New file");
         createNew.setOnAction(event -> createNewFile());
         file.getItems().addAll(openExisting, createNew);
-
-        Menu options = new Menu("Options");
-        Menu structures = new Menu("Spatial structure");
-        ToggleGroup group = new ToggleGroup();
-        for (SpatialStructures structure : SpatialStructures.values()) {
-            RadioMenuItem item = new RadioMenuItem(structureName(structure));
-            item.setToggleGroup(group);
-            item.setUserData(structure);
-            item.setSelected(controller.getSpatialStructure() == structure);
-            item.setOnAction(event -> changeSpatialStructure(structure, group));
-            structures.getItems().add(item);
-        }
-        options.getItems().add(structures);
-        return new MenuBar(file, options);
+        return new MenuBar(file);
     }
 
     /** Opens and loads an existing CSV without discarding the current data on failure. */
@@ -250,32 +260,6 @@ public final class PoiManagerFxApplication extends Application {
         currentResults = List.of();
         showAllPois(1);
         setStatus(message);
-    }
-
-    /** Rebuilds the selected tree while preserving POIs and current search results. */
-    private void changeSpatialStructure(SpatialStructures structure, ToggleGroup group) {
-        try {
-            try {
-                controller.setSpatialStructure(structure);
-            } finally {
-                group.getToggles().stream()
-                        .filter(toggle -> toggle.getUserData() == controller.getSpatialStructure())
-                        .findFirst().ifPresent(group::selectToggle);
-            }
-            refreshResults();
-            setStatus("Spatial structure changed to " + structureName(structure) + ".");
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            showError("Could not change spatial structure", exception.getMessage());
-        }
-    }
-
-    /** Returns the display name for a spatial structure. */
-    private String structureName(SpatialStructures structure) {
-        return switch (structure) {
-            case KD_TREE -> "KD Tree";
-            case QUAD_TREE -> "Quad Tree";
-            case QUAD_KD_TREE -> "Quad KD Tree";
-        };
     }
 
     /** Formats an exception and its causes for an error dialog. */

@@ -1,0 +1,559 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+\usepackage[main=slovak,english]{babel}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage[a4paper,margin=25mm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,babel,positioning}
+\usepackage{csquotes}
+\usepackage[hidelinks,unicode]{hyperref}
+
+\definecolor{diagramblue}{HTML}{205781}
+\definecolor{diagramlight}{HTML}{EAF3F8}
+\definecolor{diagramgreen}{HTML}{E9F4ED}
+\definecolor{diagramorange}{HTML}{FCF1DF}
+
+\setlength{\parindent}{1.2cm}
+\setlength{\parskip}{0.25em}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\renewcommand{\arraystretch}{1.2}
+
+\hypersetup{
+  pdftitle={Semestrálna práca S1},
+  pdfauthor={Bc. Pavol Pohánka},
+  pdfsubject={Algoritmy a údajové štruktúry 2, akademický rok 2026/2027}
+}
+
+\begin{document}
+\selectlanguage{slovak}
+
+\begin{titlepage}
+    \centering
+    {\scshape\Large Žilinská univerzita v Žiline\par}
+    \vspace{0.4cm}
+    {\scshape\large Fakulta riadenia a informatiky\par}
+    \vspace{1.2cm}
+    {\large Algoritmy a údajové štruktúry 2\par}
+    \vfill
+    {\LARGE\bfseries Semestrálna práca S1\par}
+    \vfill
+    \noindent
+    \begin{minipage}[t]{0.49\textwidth}
+        \raggedright
+        {\large Bc. Pavol Pohánka}
+    \end{minipage}
+    \begin{minipage}[t]{0.49\textwidth}
+        \raggedleft
+        {\large 2026/2027}
+    \end{minipage}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\chapter{Architektúra aplikácie a návrh riešenia}
+
+\section{Projekt a jeho časti}
+Projekt vznikol v jazyku Java 21 a zostavuje sa nástrojom Maven.
+Jeho základom sú tri vlastné priestorové stromy: KDTree, QuadTree
+a QuadKDTree. Na porovnanie je pripojených šesť externých implementácií.
+Súčasťou projektu je testovací nástroj a aplikácia POI Manager na
+správu bodov záujmu. Aplikácia má grafické rozhranie JavaFX a obsahuje
+aj terminálové rozhranie \texttt{ConsoleView}. Vstupným bodom je
+trieda \texttt{MainApplication}.
+
+\section{Architektúra a tok údajov}
+
+POI Manager tvorí používateľské rozhranie, riadiaca vrstva a model
+(obrázok \ref{fig:architecture}). \texttt{PoiManagerController}
+sprostredkúva požiadavky medzi rozhraním a \texttt{PoiManagerModel}.
+Model uchováva POI v zozname, na vyhľadávanie používa zvolený strom
+a prácu so súbormi CSV zabezpečuje cez \texttt{PoiCsvRepository}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=diagramblue, rounded corners=3pt, align=center,
+    text width=4.5cm, minimum height=0.95cm, inner sep=4pt,
+    fill=diagramlight, font=\small},
+  edge/.style={-{Latex[length=2mm]}, draw=diagramblue, thick}
+]
+\node[box] (view) at (0,0) {Rozhranie JavaFX\\{\scriptsize \texttt{sk.fri.poi.view}}};
+\node[box] (controller) at (0,-1.7) {Controller\\{\scriptsize \texttt{sk.fri.poi.controller}}};
+\node[box] (model) at (0,-3.4) {Model\\{\scriptsize \texttt{sk.fri.poi.model}}};
+\node[box, fill=diagramgreen] (tree) at (-3.4,-5.2)
+  {Priestorové stromy\\{\scriptsize \texttt{sk.fri.structures}}};
+\node[box, fill=diagramorange] (csv) at (3.4,-5.2)
+  {CSV úložisko\\{\scriptsize \texttt{PoiCsvRepository}}};
+\draw[edge] (view) -- (controller);
+\draw[edge] (controller) -- (model);
+\draw[edge] (model) -- (tree);
+\draw[edge] (model) -- (csv);
+\end{tikzpicture}
+\caption{Hlavné časti POI Managera a ich prepojenie}
+\label{fig:architecture}
+\end{figure}
+
+Grafické rozhranie vytvára \texttt{PoiManagerFxApplication}. Akcie
+v \texttt{PoiControlsView} a udalosti v tabuľke či na mape spúšťajú
+obslužné funkcie tejto triedy. Tie odovzdajú požiadavku controlleru,
+ktorý zavolá príslušnú operáciu modelu. Výsledky sa následne zobrazia
+v \texttt{PoiTableView} a \texttt{PoiMapView}. Model nepracuje priamo
+s JavaFX; používateľské rozhranie tak možno meniť bez zásahu do
+priestorového vyhľadávania a práce s údajmi.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  class/.style={draw, rounded corners=2pt, align=center, text width=3.5cm,
+    minimum height=1.1cm, inner sep=5pt, font=\small},
+  relation/.style={-{Latex[length=2mm]}, draw, thick}
+]
+\node[class] (app) at (-4.2,0) {
+  \textbf{\texttt{PoiManagerFxApplication}}\\
+  \texttt{table, map, controls}
+};
+\node[class] (controller) at (0,0) {
+  \textbf{\texttt{PoiManagerController}}\\
+  \texttt{model}
+};
+\node[class] (model) at (4.2,0) {
+  \textbf{\texttt{PoiManagerModel}}\\
+  \texttt{pois, tree, csvRepository}
+};
+\node[class] (poi) at (0,-2.4) {
+  \textbf{\texttt{Poi}}\\
+  Údaje o bode záujmu
+};
+\node[class] (tree) at (4.2,-2.4) {
+  \textbf{\texttt{SpatialTree}}\\
+  Priestorový index POI
+};
+\node[class] (csv) at (4.2,-4.6) {
+  \textbf{\texttt{PoiCsvRepository}}\\
+  Načítanie a zápis CSV
+};
+\draw[relation] (app) -- node[above] {\scriptsize volá} (controller);
+\draw[relation] (controller) -- node[above] {\scriptsize deleguje} (model);
+\draw[relation] (model) -- node[left] {\scriptsize 0..*} (poi);
+\draw[relation] (model) -- (tree);
+\draw[relation] (model) -- (csv);
+\end{tikzpicture}
+\caption{Zjednodušený UML diagram hlavných tried POI Managera}
+\label{fig:class-diagram}
+\end{figure}
+
+Balík \texttt{sk.fri.tester} obsahuje nástroj na overenie a porovnanie
+stromov, \texttt{sk.fri.adapters} obsahuje adaptéry externých stromov.
+
+\chapter{Priestorové dátové štruktúry}
+\label{chap:structures}
+
+\section{Spoločné rozhranie a body}
+Priestorový strom organizuje objekty podľa polohy. Pri vyhľadávaní
+v oblasti môže vynechať vetvy, ktoré neobsahujú hľadané body.
+
+\texttt{SpatialTree<T,P>} je spoločná abstraktná trieda stromov,
+kde \(T\) je typ objektu a \(P\) typ bodu. Poskytuje operácie:
+\begin{itemize}[leftmargin=1.5em]
+\item \texttt{insert(T)} vloží objekt a vráti informáciu o úspechu,
+\item \texttt{find(P)} vyhľadá objekty na zadanej polohe,
+\item \texttt{rangeSearch(P min, P max)} vyhľadá objekty v oblasti
+  určenej dolnými a hornými súradnicami.
+\end{itemize}
+Pri vytvorení stromu sa odovzdáva funkcia na získanie súradníc objektu
+a komparátor určujúci usporiadanie hodnôt súradníc.
+
+Pre dvojrozmerné údaje sa používa \texttt{Point<K>} s dvojicou
+súradníc a pre \(k\)-rozmerný KDTree slúži \texttt{KDPoint<K>} so
+zoznamom súradníc. Pri hľadaní bodu sa musia zhodovať všetky jeho
+súradnice podľa komparátora.
+
+Objekty s rovnakými súradnicami sa ukladajú do zoznamu hodnôt jedného
+uzla. Pri vyhľadávaní v oblasti sa započítajú aj body na jej okraji.
+
+Vkladanie a hľadanie používajú cykly, pri prehľadávaní viacerých vetiev
+sa používa zásobník.
+
+\section{KDTree}
+\texttt{KDTree<T,K>} rozdeľuje priestor postupne podľa jednej súradnice.
+V dvojrozmernom prípade sa striedajú súradnice \(x\) a \(y\), všeobecne
+sa používa dimenzia \(d \bmod k\), kde \(d\) je hĺbka uzla.
+\texttt{KDNode} obsahuje bod, jeho hodnoty a odkazy na dvoch potomkov.
+Pri vkladaní a hľadaní bodu sa pokračuje vetvou podľa deliacej súradnice,
+pri jej zhode a rozdielnom bode sa pokračuje vpravo.
+
+Príklad delenia je na obrázku \ref{fig:kd-partition}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\small]
+\fill[diagramlight] (-4,-2.3) rectangle (4,2.3);
+\draw[thick, diagramblue] (-4,-2.3) rectangle (4,2.3);
+\draw[very thick, diagramblue] (0,-2.3) -- (0,2.3);
+\draw[very thick, diagramblue, dashed] (-4,1) -- (0,1);
+\draw[very thick, diagramblue, dashed] (0,-0.8) -- (4,-0.8);
+\fill[red!75!black] (0,0) circle (2.5pt);
+\fill[red!75!black] (-2.2,1) circle (2.5pt);
+\fill[red!75!black] (2,-0.8) circle (2.5pt);
+\node[below right] at (0,0) {1. bod};
+\node[above left] at (-2.2,1) {2. bod};
+\node[above right] at (2,-0.8) {3. bod};
+\node[above] at (0,2.3) {delenie podľa \(x\)};
+\node[below] at (-2,-2.3) {delenie podľa \(y\)};
+\node[below] at (2,-2.3) {delenie podľa \(y\)};
+\end{tikzpicture}
+\caption{Príklad striedania súradníc pri delení v KDTree}
+\label{fig:kd-partition}
+\end{figure}
+
+Pri vyhľadávaní v oblasti strom kontroluje navštívené body a podľa
+hraníc oblasti vyberá vetvy, v ktorých sa môže nachádzať výsledok.
+Príklad je na obrázku \ref{fig:range-search}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\small]
+\fill[gray!12] (-4,-2) rectangle (0,2);
+\fill[diagramlight] (0,-2) rectangle (4,2);
+\draw[thick, diagramblue] (-4,-2) rectangle (4,2);
+\draw[very thick, diagramblue] (0,-2) -- (0,2);
+\fill[diagramgreen] (1,-0.6) rectangle (3.4,1.3);
+\draw[thick, green!45!black] (1,-0.6) rectangle (3.4,1.3);
+\fill[red!75!black] (0,0) circle (2.5pt);
+\fill[red!75!black] (1.7,0.5) circle (2.5pt);
+\fill[red!75!black] (2.8,-1.2) circle (2.5pt);
+\node at (-2,0) {vynechaná vetva};
+\node[above] at (0,2) {deliaca súradnica};
+\node[above] at (2.2,1.3) {hľadaná oblasť};
+\end{tikzpicture}
+\caption{Príklad vyhľadávania v oblasti ležiacej napravo od delenia}
+\label{fig:range-search}
+\end{figure}
+
+Pri výške stromu \(h\) trvá vkladanie a hľadanie bodu \(O(hk)\).
+Bez vyvažovania môže byť \(h\) až \(n\), počet rôznych bodov.
+Vyhľadávanie v oblasti trvá \(O(vk+r)\), kde \(v\) je počet navštívených
+uzlov a \(r\) počet výsledkov, v najhoršom prípade \(O(nk+r)\).
+Pre pevné \(k\) je pamäťová náročnosť lineárna vzhľadom na počet uzlov
+a uložených hodnôt.
+
+\section{QuadTree}
+\texttt{QuadTree<T,K>} rozdeľuje rovinu na štyri kvadranty podľa bodu
+uzla (obrázok \ref{fig:quadrants}). Uzol obsahuje bod, jeho hodnoty
+a až štyroch potomkov. Pri vkladaní aj hľadaní bodu sa podľa súradníc
+vyberie príslušný kvadrant. Body na deliacej priamke patria napravo
+alebo nahor.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.82]
+\fill[diagramlight] (-4,-3) rectangle (4,3);
+\draw[thick, diagramblue] (-4,-3) rectangle (4,3);
+\draw[dashed,diagramblue] (0,-3) -- (0,3);
+\draw[dashed,diagramblue] (-4,0) -- (4,0);
+\fill[red!80!black] (0,0) circle (2.5pt);
+\node[above left] at (-0.1,0.1) {\small uzol \((x_0,y_0)\)};
+\node at (-2,1.5) {\small \(x<x_0,\ y\geq y_0\)};
+\node at (2,1.5) {\small \(x\geq x_0,\ y\geq y_0\)};
+\node at (-2,-1.5) {\small \(x<x_0,\ y<y_0\)};
+\node at (2,-1.5) {\small \(x\geq x_0,\ y<y_0\)};
+\draw[-{Latex[length=2mm]}, thick] (0,-3.35) -- (3.7,-3.35) node[right] {\small \(x\)};
+\draw[-{Latex[length=2mm]}, thick] (-4.35,0) -- (-4.35,2.7) node[above] {\small \(y\)};
+\end{tikzpicture}
+\caption{Rozdelenie do kvadrantov podľa súradníc uzla QuadTree}
+\label{fig:quadrants}
+\end{figure}
+
+Pri vyhľadávaní v oblasti strom prechádza kvadranty, ktoré sa môžu
+prekrývať so zadanou oblasťou. Vkladanie a hľadanie bodu trvá \(O(h)\),
+vyhľadávanie v oblasti \(O(v+r)\), najviac \(O(n+r)\). Pamäťová
+náročnosť je lineárna vzhľadom na počet uzlov a hodnôt.
+
+Maximálna hĺbka je 32. Nový bod vyžadujúci hlbší uzol sa odmietne,
+k existujúcemu bodu možno pridať ďalšiu hodnotu.
+
+\section{QuadKDTree}
+\texttt{QuadKDTree<T,K>} kombinuje kvadrantové delenie s KDTree.
+Vonkajšia časť rozdeľuje priestor na kvadranty, zatiaľ čo body v každom
+liste sú uložené v samostatnom KDTree. Hodnoty s rovnakými súradnicami
+sa ukladajú spolu v uzle tohto KDTree.
+
+List sa začne deliť pri vkladaní nového bodu, keď už obsahuje 32 bodov
+s rôznymi súradnicami a ešte nedosiahol limit hĺbky. Jeho hodnoty sa
+podľa polohy rozdelia do nových listov, ako ukazuje obrázok
+\ref{fig:quadkd-split}. Kvadrantové delenie má maximálnu hĺbku 32.
+Po dosiahnutí tohto limitu sa ďalšie body pridávajú do KDTree v liste,
+ktorý sa už ďalej nedelí.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=diagramblue, rounded corners=3pt, align=center,
+    minimum height=0.9cm, inner sep=4pt, font=\small},
+  edge/.style={-{Latex[length=2mm]}, draw=diagramblue, thick}
+]
+\node[box, fill=diagramgreen, text width=2.8cm] (before) at (-4.2,0)
+  {List s KDTree\\32 rôznych bodov};
+\node[box, fill=diagramlight, text width=3cm] (root) at (2.2,0.6)
+  {Kvadrantové\\rozdelenie};
+\node[box, fill=diagramgreen, text width=1.5cm] (one) at (-1.1,-1.7) {KDTree\\v liste};
+\node[box, fill=diagramgreen, text width=1.5cm] (two) at (1.1,-1.7) {KDTree\\v liste};
+\node[box, fill=diagramgreen, text width=1.5cm] (three) at (3.3,-1.7) {KDTree\\v liste};
+\node[box, fill=diagramgreen, text width=1.5cm] (four) at (5.5,-1.7) {KDTree\\v liste};
+\draw[edge] (before) -- node[above, align=center, font=\scriptsize]
+  {ďalší\\nový bod} (root);
+\draw[edge] (root) -- (one);
+\draw[edge] (root) -- (two);
+\draw[edge] (root) -- (three);
+\draw[edge] (root) -- (four);
+\end{tikzpicture}
+\caption{Príklad rozdelenia listu QuadKDTree do štyroch obsadených kvadrantov}
+\label{fig:quadkd-split}
+\end{figure}
+
+Pri hľadaní bodu strom nájde príslušný list a prehľadá jeho KDTree.
+Pri vyhľadávaní v oblasti prehľadá KDTree v príslušných kvadrantoch.
+Pri výške vonkajšej cesty \(h\) a výške KDTree v liste \(h_k\) trvá
+hľadanie bodu aj vkladanie bez delenia \(O(h+h_k k)\). Pri delení treba
+navyše rozmiestniť všetky hodnoty listu, vrátane hodnôt s rovnakými
+súradnicami. Vyhľadávanie v oblasti trvá v najhoršom prípade \(O(nk+r)\).
+Pre pevné \(k\) je pamäťová náročnosť lineárna vzhľadom na počet uzlov
+a uložených hodnôt.
+
+\section{Porovnanie vlastných implementácií}
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}p{2.6cm}XXX@{}}
+\toprule
+\textbf{Vlastnosť} & \textbf{KDTree} & \textbf{QuadTree} & \textbf{QuadKDTree}\\
+\midrule
+Rozdelenie priestoru & Striedanie súradnicových dimenzií & Kvadranty podľa bodu uzla & Kvadranty, KDTree v listoch\\
+Dimenzie & \(k\) & 2 & 2\\
+Duplicitné body & Zoznam hodnôt v uzle & Zoznam hodnôt v uzle & Zoznam hodnôt v uzle KDTree\\
+Vyhľadávanie v oblasti & Výber vetiev podľa deliacej súradnice & Výber kvadrantov podľa oblasti & Výber kvadrantov a vyhľadávanie v KDTree listov\\
+Limity & -- & Hĺbka 32, nové body nad limit sa odmietajú & Hĺbka 32, delenie listu pri 33. rôznom bode\\
+\bottomrule
+\end{tabularx}
+\caption{Vlastnosti vlastných priestorových štruktúr}
+\label{tab:own-trees}
+\end{table}
+
+\chapter{Externé implementácie}
+\label{chap:external}
+
+Externé stromy umožňujú porovnať vlastné riešenie s ďalšími
+implementáciami. Každý z nich má adaptér odvodený od \texttt{SpatialTree}.
+Adaptér prevádza body a výsledky do formátu projektu, aby testovací
+nástroj mohol stromy používať rovnakým spôsobom.
+
+\section{Externé KDTree}
+\begin{itemize}[leftmargin=1.5em]
+\item \textbf{KDtree-AlgorithmsAndStructures} \cite{externalKd} používa
+  adaptér \texttt{KDAdapter}. Vkladanie a hľadanie bodu vykonáva strom,
+  vyhľadávanie v oblasti adaptér rieši lineárnym prechodom cez pomocný
+  zoznam bodov.
+\item \textbf{TinSpin Indexes} \cite{tinspin} sprístupňuje
+  \texttt{TinSpinKDAdapter}. Súradnice prevádza na pole hodnôt
+  \texttt{double} a vyhľadávanie vykonáva externý strom.
+\item \textbf{JTS} \cite{jts} používa \texttt{JtsKDAdapter}.
+  Pre objekty s rovnakou polohou vedie pomocnú mapu hodnôt, oblasti
+  zadáva pomocou triedy \texttt{Envelope}.
+\end{itemize}
+
+\section{Externé QuadTree}
+\begin{itemize}[leftmargin=1.5em]
+\item \textbf{Varun Pant Quadtree} \cite{varunQuad} používa
+  \texttt{VarunPantQuadTreeAdapter}, ktorý zoskupuje hodnoty na rovnakej
+  polohe. Rozsah stromu je nastavený na zemepisné súradnice.
+\item \textbf{Alwex QuadTree} \cite{alwexQuad} sprístupňuje
+  \texttt{AlwexQuadTreeAdapter}. Bod vkladá ako malý obdĺžnik a výsledné
+  objekty filtruje podľa pôvodných súradníc. Implementácia používa
+  súradnice typu \texttt{float}.
+\item \textbf{Java Simple Quadtree} \cite{ryanQuad} používa
+  \texttt{RyanQuadTreeAdapter}. Body vkladá ako obdĺžniky nulovej veľkosti
+  a výsledky filtruje podľa zadanej oblasti vrátane jej hraníc.
+\end{itemize}
+
+\chapter{Testovanie a porovnanie výkonnosti}
+\label{chap:testing}
+
+\section{Testovací nástroj a dáta}
+\texttt{TreeTester} overuje tri vlastné stromy a šesť externých adaptérov.
+Vložené body vyhľadáva podľa polohy a výsledky hľadania v oblasti
+porovnáva s lineárnym prechodom prijatých bodov. Zo súborov
+\texttt{slovakia\_nodes.csv} a \texttt{testovacie\_oblasti.csv}
+načíta najviac 10\,000 bodov a 1\,000 oblastí.
+
+\section{Kontrola správnosti}
+Všetkých deväť konfigurácií prešlo kontrolami vyhľadávania.
+Pri kontrole vkladania a hľadania polohy sa vyberalo
+1\,000 bodov s opakovaním, pri hľadaní v oblasti sa použilo 10\,000
+bodov a 1\,000 oblastí. Vlastný QuadTree odmietol 4\,900 bodov pre limit
+hĺbky 32, preto sa výsledky porovnávali iba s prijatými bodmi.
+
+\section{Metodika benchmarku a obmedzenia}
+\texttt{TreeBenchmark} meria vkladanie, hľadanie vložených bodov
+a vyhľadávanie v oblasti. Výsledkom je medián časov v milisekundách.
+Každý beh vytvára nový strom, počet hľadaní sa môže líšiť podľa počtu
+úspešne vložených bodov.
+
+Benchmark vykoná dva zahrievacie a päť meraných behov. Aktuálny nástroj
+používa až 1\,000 oblastí na beh.
+
+\section{Výsledky testov}
+Tabuľka uvádza mediány piatich behov s 10\,000 vloženiami,
+10\,000 hľadaniami bodov a 100 dopytmi na oblasť na beh. Meranie sa
+uskutočnilo pred opravou počtu zahrievacích behov, po oprave sa benchmark
+znovu nespúšťal.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Xrrrr@{}}
+\toprule
+\textbf{Implementácia} & \textbf{Vkladanie} & \textbf{Hľadanie} &
+\textbf{Oblasť} & \textbf{Spolu}\\
+\midrule
+My KDTree & 5,266 & 5,056 & 0,512 & 10,833\\
+My QuadTree & 5,845 & 6,182 & 0,806 & 12,833\\
+My Quad-KDTree & 5,069 & 4,694 & 2,913 & 12,676\\
+Existing external KDTree & 6,242 & 6,264 & 21,801 & 34,307\\
+TinSpin KDTree & 4,254 & 25,984 & 0,446 & 30,683\\
+JTS KDTree & 11,958 & 13,796 & 0,325 & 26,078\\
+Varun Pant QuadTree & 4,171 & 4,316 & 0,069 & 8,557\\
+Alwex QuadTree & 18,314 & 128,441 & 5,067 & 151,822\\
+Ryan Pelletier QuadTree & 3,069 & 1\,139,936 & 10,828 & 1\,153,832\\
+\bottomrule
+\end{tabularx}
+\caption{Výsledky benchmarku: mediány v milisekundách}
+\label{tab:historical-results}
+\end{table}
+
+Najnižší celkový čas v uvedenom meraní má Varun Pant Quadtree
+(8,557 ms). Spomedzi vlastných štruktúr dosiahol najnižší celkový čas
+KDTree (10,833 ms).
+
+\chapter{Aplikácia POI Manager}
+\label{chap:poi}
+
+\section{Záznamy a priestorový index}
+\texttt{Poi} obsahuje identifikátor, názov, opis, súradnice, adresu
+a čas vytvorenia a poslednej úpravy. Model ukladá záznamy do zoznamu
+a ich polohu indexuje zvoleným stromom. Súradnice sú v poradí
+\texttt{(latitude, longitude)}.
+
+\section{Vyhľadávanie a správa POI}
+Vyhľadávanie podľa polohy vráti aktívne POI na zadaných súradniciach.
+Pri hľadaní v okolí sa najprv vyberú body v obdĺžniku a potom sa overí
+ich vzdialenosť. Pri hľadaní názvu v oblasti sa výsledky filtrujú podľa
+názvu bez ohľadu na veľkosť písmen a diakritiku.
+
+POI možno vytvárať, upravovať, zobrazovať a mazať. Mazanie je logické:
+záznam zostáva v pamäti, ale bežné vyhľadávanie ho vynechá. Pri úprave
+sa index zostaví znova. Skúšobné POI sa generujú v obdĺžnikovej oblasti,
+preto môžu ležať aj mimo hranice Slovenska.
+
+\section{CSV a používateľské rozhranie}
+CSV súbor obsahuje iba aktívne záznamy. Polia sú oddelené bodkočiarkou,
+preto názov, opis ani adresa nesmú obsahovať bodkočiarku alebo nový riadok.
+Zmeny sa ukladajú akciou používateľa.
+
+Rozhranie JavaFX zobrazuje POI v tabuľke a na offline mape Slovenska
+\cite{naturalEarth}. Mapa umožňuje posun, zmenu mierky, výber bodu
+a vytvorenie POI kliknutím.
+
+\chapter{Používateľská príručka}
+
+\section{Spustenie}
+Na spustenie je potrebný JDK 21 a Maven. V koreňovom adresári projektu
+spustite:
+\begin{verbatim}
+mvn javafx:run
+\end{verbatim}
+Po spustení vyberte v úvodnom dialógu KD Tree, Quad Tree alebo Quad KD
+Tree. V nasledujúcom kroku zvoľte \enquote{New file} a určte nový CSV
+súbor, alebo vyberte \enquote{Open file} a načítajte existujúcu
+evidenciu. Zvolený strom zostane aktívny počas celého behu aplikácie,
+zmeniť ho možno až po jej opätovnom spustení.
+
+Projekt obsahuje aj terminálové rozhranie \texttt{ConsoleView},
+jeho spustenie je v \texttt{MainApplication} zakomentované.
+
+\section{Každodenná práca}
+\begin{enumerate}[leftmargin=1.5em]
+\item Na presné hľadanie zvoľte \enquote{Find by GPS} a zadajte súradnice v desatinných stupňoch.
+\item Na vyhľadanie okolia kliknite na riadok POI v tabuľke, použite \enquote{Find nearby} a zadajte polomer v metroch. Stredom je poloha vybraného záznamu.
+\item Na hľadanie podľa názvu použite \enquote{Search by name} a zadajte text aj hranice oblasti.
+\item Na vytvorenie POI použite \enquote{Add POI}, prípadne kliknite do mapy vnútri hranice Slovenska. Na úpravu zaškrtnite práve jeden aktívny záznam a zvoľte \enquote{Edit selected}.
+\item Na vymazanie zaškrtnite záznamy a použite \enquote{Delete selected}. Cez \enquote{Show deleted} možno zobraziť aj vymazané záznamy.
+\item Rozsah zobrazených záznamov sa mení v ponuke \enquote{Show}, \enquote{All POI} zobrazí všetky. \enquote{Generate test POIs} vytvorí skúšobné záznamy.
+\item Pred zatvorením alebo prepnutím súboru uložte zmeny cez \enquote{Save CSV}, automatické ukladanie nie je zapnuté.
+\end{enumerate}
+
+\chapter{Záver}
+
+Výsledkom práce sú tri vlastné priestorové štruktúry, šesť externých
+adaptérov a aplikácia POI Manager, ktorá index využíva na hľadanie POI
+podľa polohy, oblasti a vzdialenosti. V zaznamenanom teste správnosti
+deväť konfigurácií prešlo kontrolami nad skúšobnou vzorkou, vlastný
+QuadTree však pre limit hĺbky odmietol časť bodov. Benchmarkové výsledky
+zaznamenávajú časy namerané pri použitom nastavení testu.
+
+\renewcommand{\bibname}{Zoznam použitej literatúry}
+\begin{thebibliography}{10}
+\addcontentsline{toc}{chapter}{Zoznam použitej literatúry}
+
+\bibitem{externalKd} Luka3691.
+\textit{KDtree-AlgorithmsAndStructures}.
+\url{https://github.com/luka3691/KDtree-AlgorithmsAndStructures}.
+[cit. 2026-11-09].
+
+\bibitem{tinspin} Tzaeschke.
+\textit{TinSpin Indexes}.
+\url{https://github.com/tzaeschke/tinspin-indexes}.
+[cit. 2026-11-09].
+
+\bibitem{jts} LocationTech.
+\textit{JTS Topology Suite}.
+\url{https://github.com/locationtech/jts}.
+[cit. 2026-11-09].
+
+\bibitem{varunQuad} Varun Pant.
+\textit{Quadtree}.
+\url{https://github.com/varunpant/Quadtree}.
+[cit. 2026-11-09].
+
+\bibitem{alwexQuad} Alwex.
+\textit{QuadTree}.
+\url{https://github.com/alwex/QuadTree}.
+[cit. 2026-11-09].
+
+\bibitem{ryanQuad} Ryan Pelletier.
+\textit{Java Simple Quadtree}.
+\url{https://github.com/ryanmpelletier/java-simple-quadtree}.
+[cit. 2026-11-09].
+
+\bibitem{naturalEarth} Natural Earth.
+\textit{Natural Earth -- public domain map data}.
+\url{https://www.naturalearthdata.com/}.
+[cit. 2026-11-09]. Zdrojová poznámka je uvedená v
+\texttt{src/main/resources/map/slovakia-border.txt}.
+\end{thebibliography}
+
+\end{document}

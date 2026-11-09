@@ -20,9 +20,8 @@ public class MainApplication {
      * @param args command-line arguments (not used)
      */
     public static void main(String[] args) {
-        Application.launch(PoiManagerFxApplication.class, args);
+        /*Application.launch(PoiManagerFxApplication.class, args);*/
 
-        /*
         PoiManagerView view = new ConsoleView();
         SpatialStructures structure = view.chooseStructure();
         Path csvPath = Path.of(view.askCsvPath());
@@ -31,6 +30,5 @@ public class MainApplication {
         if (controller.loadAtStartup()) {
             controller.run();
         }
-        */
     }
 }
