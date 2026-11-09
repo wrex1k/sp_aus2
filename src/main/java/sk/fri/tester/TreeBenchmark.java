@@ -7,11 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/** Measures insertion, exact lookup and range search times for spatial trees. */
 public class TreeBenchmark {
 
     private static final int WARMUP_RUNS = 2;
     private static final int MEASURED_RUNS = 5;
 
+    /** Holds measured durations for each operation on one tree. */
     private record TreeTimes(
             String name,
             List<Long> insertTimes,
@@ -20,9 +22,17 @@ public class TreeBenchmark {
     ) {
     }
 
+    /** Holds operation durations from one benchmark run in nanoseconds. */
     private record RunTimes(long insertTime, long findTime, long areaSearchTime) {
     }
 
+    /**
+     * Runs the benchmark for each available structure and prints median timings.
+     *
+     * @param points points used for insertion and lookup
+     * @param areas rectangular areas used for range searches
+     * @throws AssertionError if an inserted point cannot be found
+     */
     public static void compareStructures(List<CsvPoint> points, List<Area> areas) {
         List<TreeTimes> results = new ArrayList<>();
         List<SpatialTree<CsvPoint, Point<Double>>> trees = TreeTester.get2DTrees();
@@ -52,6 +62,7 @@ public class TreeBenchmark {
         printResults(results, points.size(), areas.size());
     }
 
+    /** Measures one run using a fresh tree. */
     private static RunTimes runOnce(
             SpatialTree<CsvPoint, Point<Double>> tree,
             List<CsvPoint> points,
@@ -96,6 +107,7 @@ public class TreeBenchmark {
         return new RunTimes(insertTime, findTime, areaSearchTime);
     }
 
+    /** Prints median timings and the workload size for each tree. */
     private static void printResults(List<TreeTimes> results, int pointCount, int areaCount) {
         System.out.println("Median time across " + MEASURED_RUNS + " runs ("
                 + pointCount + " insertion attempts, finds for successfully inserted points and "
@@ -120,6 +132,7 @@ public class TreeBenchmark {
         }
     }
 
+    /** Returns the middle sorted duration converted from nanoseconds to milliseconds. */
     private static double medianMillis(List<Long> times) {
         List<Long> sortedTimes = times.stream().sorted().toList();
         return sortedTimes.get(sortedTimes.size() / 2) / 1_000_000.0;

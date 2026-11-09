@@ -96,6 +96,7 @@ final class PoiCsvRepository {
         }
     }
 
+    /** Parses a numeric field and reports its CSV location on failure. */
     private static double parseDouble(String value, String column, Path path, int row) throws IOException {
         try {
             return Double.parseDouble(value);
@@ -104,6 +105,7 @@ final class PoiCsvRepository {
         }
     }
 
+    /** Parses a timestamp and reports its CSV location on failure. */
     private static Instant parseInstant(String value, String column, Path path, int row) throws IOException {
         try {
             return Instant.parse(value);
@@ -112,12 +114,14 @@ final class PoiCsvRepository {
         }
     }
 
+    /** Creates a CSV error identifying the invalid field and its location. */
     private static IOException invalidValue(
             String column, String value, Path path, int row, String expected, Exception cause) {
         return new IOException("Invalid CSV value in " + path.toAbsolutePath() + " at line " + row
                 + ", column '" + column + "': " + quote(value) + " (" + expected + ").", cause);
     }
 
+    /** Quotes and truncates a value for inclusion in an error message. */
     private static String quote(String value) {
         String visible = value.length() > 300 ? value.substring(0, 300) + "..." : value;
         return "\"" + visible.replace("\"", "\"\"") + "\"";

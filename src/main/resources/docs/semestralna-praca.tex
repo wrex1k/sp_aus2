@@ -1,0 +1,682 @@
+% ============================================================================
+%  Bakalárska práca FRI UNIZA - celý projekt v jednom súbore
+%  Kompilácia: pdflatex -> biber -> pdflatex -> pdflatex
+%  (bibliografia je vložená nižšie cez filecontents, súbor literatura.bib
+%   sa vytvorí automaticky)
+% ============================================================================
+
+\begin{filecontents*}[overwrite]{literatura.bib}
+@book{latexcompanion,
+    author    = "Michel Goossens and Frank Mittelbach and Alexander Samarin",
+    title     = "The \LaTeX\ Companion",
+    year      = "1993",
+    publisher = "Addison-Wesley",
+    address   = "Reading, Massachusetts",
+    keywords  = "latex"
+}
+
+@book{Chen2012a,
+address = {New York, NY},
+author = {Chen, Hsinchun},
+doi = {10.1007/978-1-4614-1557-2},
+isbn = {978-1-4614-1556-5},
+publisher = {Springer New York},
+series = {Integrated Series in Information Systems},
+title = {{Dark Web}},
+url = {http://link.springer.com/10.1007/978-1-4614-1557-2},
+volume = {30},
+year = {2012}
+}
+
+@article{Zheng2006,
+author = {Zheng, Rong and Li, Jiexun and Chen, Hsinchun and Huang, Zan},
+doi = {10.1002/asi},
+journal = {Journal of the American Society for Information Science and Technology},
+keywords = {Authorship identification,Supervised,classification},
+number = {3},
+pages = {378--393},
+title = {{A Framework for Authorship Identi cation of Online Messages: Writing-Style Features and Classi cation Techniques}},
+volume = {57},
+year = {2006}
+}
+@article{Li2006,
+abstract = {Identifying the key features to help identify and trace online authorship.},
+author = {Li, Jiexun and Zheng, Rong and Chen, Hsinchun},
+doi = {10.1145/1121949.1121951},
+issn = {00010782},
+journal = {Communications of the ACM},
+number = {4},
+pages = {76--82},
+title = {{From fingerprint to writeprint}},
+url = {http://portal.acm.org/citation.cfm?doid=1121949.1121951},
+volume = {49},
+year = {2006}
+}
+
+@book{Priezvisko,
+    author    = "Priezvisko M.",
+    title     = "Priklad",
+    year      = "2018",
+    publisher = "UNIZA",
+}
+\end{filecontents*}
+
+\documentclass[a4paper,12pt]{report}
+\usepackage[slovak,english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[protrusion=true,expansion=true]{microtype}
+\usepackage{mathpazo}
+\usepackage[T1]{fontenc}
+\linespread{1.5}
+%alebo cez \renewcommand{\baselinestretch}{1.5}\normalsize
+\usepackage{moresize}
+\usepackage{geometry}
+%\usepackage[inner=4cm,outer=2cm,bottom=2.5cm]{geometry}
+\addtolength{\oddsidemargin}{-.5cm}
+\addtolength{\evensidemargin}{-2.9cm}
+\addtolength{\topmargin}{0cm}
+\addtolength{\textheight}{0cm}
+\addtolength{\textwidth}{2.cm}
+\addtolength{\textheight}{2.cm}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subfig}
+\usepackage{pdfpages}
+\usepackage{listings}
+\usepackage{eurosym}
+\usepackage{url,mathptmx}
+\usepackage{booktabs}
+\usepackage{array, hhline}
+\usepackage{lscape}
+\usepackage{amssymb, amsmath, amsfonts, lmodern}
+%\usepackage{amssymb, amsmath, lmodern}
+%toto je trochu ine pismo \usepackage{amssymb,amsfonts,amscd}
+\usepackage{acronym}
+\usepackage{paralist}
+\usepackage{verbatim}
+\usepackage{comment}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[pdftex,unicode,bookmarks=false]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{csquotes}
+
+\renewcommand{\chaptermark}[1] %	HEADER / FOOTER  DEFINITIONS
+{
+  \markboth{#1}{}
+}
+\usepackage{sectsty}%	SECTION TITLE APPEARANCE
+\allsectionsfont{\mdseries\upshape}
+\usepackage[explicit]{titlesec}
+\usepackage[nottoc,notlof,notlot]{tocbibind}
+\usepackage[titles,subfigure]{tocloft}
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont} {\rmfamily\mdseries\upshape}
+
+\usepackage{nicefrac}
+\usepackage{biblatex}
+
+\addbibresource{literatura.bib}
+
+\newtheorem{mydef}{Definícia}
+\newtheorem{myexample}{Príklad}
+
+
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyhead[L, R]{FRI UNIZA \hfill BAKALÁRSKA PRÁCA }
+   \fancyfoot[C]{}
+   \fancyfoot[R]{\thepage}
+}
+ \renewcommand{\headrulewidth}{0pt} % remove lines as well
+
+\titlespacing*{\chapter}{0pt}{-30pt}{30pt}
+
+\titleformat{\section}{\LARGE\bf}{\textcolor{black}{\thesection \hspace{12pt} #1}}{0pt}{}
+\titleformat{\subsection}{\large\bf}{\textcolor{black}{#1}}{0pt}{}
+
+
+\begin{document}
+\selectlanguage{slovak}
+
+\titleformat{\chapter}[display]{\normalfont\bfseries}{}{10pt}{\huge#1}
+
+
+
+\pagenumbering{roman}
+
+\pagestyle{empty}
+
+% ============================================================================
+%  special/titulna_strana.tex
+% ============================================================================
+\begin{titlepage}
+\phantom.
+
+\bigskip
+
+\begin{center}
+{\sc\LARGE ŽILINSKÁ UNIVERZITA V ŽILINE}
+\medskip
+
+{\sc\Large Fakulta riadenia a informatiky}
+
+\vspace{7.5cm}
+
+{\sc\LARGE Bakalárska práca}
+
+\medskip
+
+{\large Študijný odbor: {\bf Informatika}}
+\end{center}
+
+
+\vspace{4cm}
+
+
+
+\phantom.\hfill
+
+\begin{center}
+{\large\bf Meno Priezvisko}
+
+\medskip
+
+{\large\bf Názov tvojej práce}
+
+\medskip
+
+Vedúci práce: {\bf Ing. Oľga Chovancová}
+\medskip
+
+\hfill
+Reg.č. X/201X
+\hfill
+Máj 201X
+\hfill\phantom.
+\end{center}
+
+\hspace{1.7cm}\phantom.
+
+%\vspace{1.7cm}
+
+\phantom.
+\end{titlepage}
+\clearpage
+
+% ============================================================================
+%  special/zadanie_prace.tex
+% ============================================================================
+%naskenovat a pridat do priecinka
+%\includepdf{zadanie.pdf}   %toto odkomentovat pri tlaceni, alebo ked tam budete mat naskenovane zadanie, alebo zadanie v pdf
+\clearpage
+
+\pagestyle{plain}
+\setcounter{page}{3}
+
+% ============================================================================
+%  special/cestne_prehlasenie.tex
+% ============================================================================
+\newpage
+\phantom.
+\vspace{12cm}
+\noindent{\bf Čestné vyhlásenie}
+
+\vspace{2em}
+
+Prehlasujem, že som XXXXXXXX prácu \textit{Nazov tvojej prace} vypracoval/a samostatne pod vedením ... , a uviedl/a v nej všetky použité literárne a iné odborné zdroje v súlade s právnymi predpismi, vnútornými predpismi Žilinskej univerzity a vnútornými aktmi riadenia Žilinskej univerzity a Fakulty riadenia a informatiky.
+
+\vspace{2em}
+
+\noindent
+V~Žiline, dňa ..............
+\hfill
+..........................................
+
+
+\hfill
+Meno Priezvisko \qquad\quad
+\clearpage
+
+% ============================================================================
+%  special/podakovanie.tex
+% ============================================================================
+\newpage
+\phantom.
+\vspace{12cm}
+\noindent{\bf Poďakovanie}
+\vspace{2em}
+\noindent
+\bigskip
+
+Na tomto mieste by som chcela poďakovať vedúcemu diplomovej práce....  za cenné pripomienky a odborné rady, ktorými prispel k vypracovaniu tejto XXXXX práce. Taktiež ďakujem môjmu ... . Zároveň ďakujem mojej rodine a priateľom za ich nekonečnú podporu a trpezlivosť.
+
+\vspace{2em}
+\clearpage
+
+% ============================================================================
+%  special/abstrakt.tex
+% ============================================================================
+\fancyhead[L, R]{FRI UNIZA \hfill BAKALÁRSKA PRÁCA }
+
+%--------------------------------------------------------------------------------------
+%%% slovensky abstrakt
+\noindent{\textbf{ABSTRAKT V ŠTÁTNOM JAZYKU }}
+\\
+
+\noindent
+PRIEZVISKO, Meno: Názov témy záverečnej práce. [Bakalárska práca]. – Žilinská Univerzita v~Žiline. Fakulta riadenia a informatiky; Katedra informatiky. – Školiteľ/Vedúci: Ing. Oľga Chovancová –   Stupeň odbornej kvalifikácie: magister. – Mesto: FRI UNIZA, 20xx. Počet strán (napr. 35 s.)
+
+\bigskip
+Cieľom bakalárskej práce je ...
+
+% \textit{Vzorové osnovy písania abstraktu:}
+% Práca prezentuje... Objektom skúmania našej práce bolo... V práci analyzujeme... Vypracovali
+% sme návrh... Overili sme postup... Predpokladá sa... Zistili sme... Navrhujeme aplikovať do
+% praxe... .
+% alebo:
+% %
+% Cieľom záverečnej práce bolo... Práca je rozdelená do ... kapitol. Obsahuje ... grafov, ...
+% tabuliek a ... príloh. Prvá kapitola je venovaná... V ďalšej časti sa charakterizuje... Záverečná
+% kapitola sa zaoberá... Výsledkom riešenia danej problematiky je... .
+% a pod.
+
+\bigskip
+\noindent
+\textbf{Kľúčové slová}:  kľúčové slovo 1, kľúčové slovo 2, kľúčové slovo 3, ... kľúčové slovo x.
+\bigskip
+\\
+
+\bigskip
+\noindent\textbf{ABSTRAKT V CUDZOM JAZYKU }
+
+\bigskip
+The aim of the thesis is to .......
+
+\bigskip
+\noindent
+\textbf{Key words: } key word 1, key word 2, key word 3, ... , key word x.
+\clearpage
+
+ %\lhead{FRI UNIZA}
+ %\rhead{BAKALÁRSKA PRÁCA}
+% \rfoot{\thepage}
+\fancyhead[L, R]{FRI UNIZA \hfill BAKALÁRSKA PRÁCA }
+% \fancyfoot[C]{}
+
+% ============================================================================
+%  special/obsah.tex
+% ============================================================================
+%\addcontentsline{toc}{chapter}{Obsah}
+\setcounter{tocdepth}{1}
+\tableofcontents
+\cleardoublepage
+\clearpage
+
+% ============================================================================
+%  special/zoznamy.tex
+% ============================================================================
+\newpage
+\cleardoublepage
+\listoffigures
+\addcontentsline{toc}{chapter}{Zoznam obrázkov}
+\listoftables
+\addcontentsline{toc}{chapter}{Zoznam tabuliek}
+\cleardoublepage
+\clearpage
+
+% ============================================================================
+%  special/skratky.tex
+% ============================================================================
+\pagestyle{plain}
+\addcontentsline{toc}{chapter}{Zoznam skratiek}
+\vspace{0pt plus 2cm}
+\chapter*{Zoznam skratiek}
+\begin{acronym}
+\acro{SKRATKA }{ VYZNAM SKRATKY}
+\end{acronym}
+
+%pouzitie v texte
+% \ac{SKRATKA} - long description (SKRATKA)
+% \ac{SKRATKA} - short - because it is second use
+% \acs{SKRATKA} - short  - this will force short form
+\clearpage
+
+
+\pagenumbering{arabic}
+\pagestyle{fancy}
+
+% ============================================================================
+%  kapitoly/uvod.tex
+% ============================================================================
+\chapter*{Úvod}
+\addcontentsline{toc}{chapter}{Úvod}
+
+Cieľom bakalárskej/diplomovej práce je ......
+Náplňou prvej časti práce je oboznámenie sa s problematikou ...............
+Ďalšia časť sa zaoberá rozborom existujúcich ............... Ďalšia kapitola popisuje spôsob implementácie ................. Posledná časť práce ............................
+
+Napísať o tom čo to zlepší, alebo aký je zmysel toho čo robíte alebo aký to ma dopad.
+
+\bigskip
+Postup práce:
+
+\begin{enumerate}
+\item Oboznámenie sa s problematikou .........
+\item Rozbor existujúcich .......
+\item  Implementácia v....
+\item  Experimentálne porovnanie .....
+\end{enumerate}
+
+\clearpage
+
+\titleformat{\chapter}[display]{\normalfont\bfseries}{}{10pt}{\huge\thechapter \quad#1}
+
+ %Pripadne doplniť dalsie
+
+% ============================================================================
+%  kapitoly/kapitola1.tex
+% ============================================================================
+\chapter{Analýza súčasného stavu}
+
+7-15 strany napísať vašu analýzu súčasného stavu a technológií.
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+\section{Názov sekcie}
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+
+\subsection{Citovanie zdrojov}
+Pre citovanie odporucam pouzivat \href{https://www.mendeley.com}{Mendeley program}.
+
+Novy zdroj treba pridat do suboru \textbf{literatura.bib} bibtex udaj napriklad v tvare:
+\begin{verbatim}
+@book{Chen2012a,
+    address = {New York, NY},
+    author = {Chen, Hsinchun},
+    doi = {10.1007/978-1-4614-1557-2},
+    isbn = {978-1-4614-1556-5},
+    publisher = {Springer New York},
+    series = {Integrated Series in Information Systems},
+    title = {{Dark Web}},
+    url = {http://link.springer.com/10.1007/978-1-4614-1557-2},
+    volume = {30},
+    year = {2012}
+}
+@article{Li2006,
+    abstract = {Identifying the key features to help identify and trace online authorship.},
+    author = {Li, Jiexun and Zheng, Rong and Chen, Hsinchun},
+    doi = {10.1145/1121949.1121951},
+    issn = {00010782},
+    journal = {Communications of the ACM},
+    number = {4},
+    pages = {76--82},
+    title = {{From fingerprint to writeprint}},
+    url = {http://portal.acm.org/citation.cfm?doid=1121949.1121951},
+    volume = {49},
+    year = {2006}
+}
+\end{verbatim}
+
+Citovanie - príkazom \textbf{cite} \cite{Priezvisko}.
+\begin{verbatim}
+	text text \cite{Li2006}, pripadne viac autorov: \cite{latexcompanion,Chen2012a,Zheng2006}.
+\end{verbatim}
+
+text text \cite{Li2006}, pripadne viac autorov: \cite{latexcompanion,Chen2012a,Zheng2006}.
+
+\subsection{Zoznamy}
+
+Číslovaný zoznam:
+\begin{enumerate}
+	\item \textbf{Enumerate}
+	\item Nové položky sa pridávajú cez \textbf{item}
+\end{enumerate}
+
+Nejaký text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+Bodový zoznam:
+\begin{itemize}
+	\item \textbf{Itemize}
+	\item Nové položky sa pridávajú cez \textbf{item}
+\end{itemize}
+
+
+\subsection{Tabuľky}
+
+Tabuľky generujte napríklad z stránky: \url{https://www.tablesgenerator.com/}
+
+
+Referencia na tabuľku cez príkaz \textbf{ref} \ref{table1}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\textbf{Bunka 1} & \textbf{Bunka 2} & \textbf{Bunka 3} & \textbf{Bunka 4} & \textbf{Bunka 5} \\ \hline
+54645            & 456465           & 456              & 23               & 23               \\ \hline
+text             & dads             & fdsafsda         & 32               & 23               \\ \hline
+dfsaf            & sdfsad           & dsfadsf          & 3232             & 3232             \\ \hline
+\end{tabular}
+\caption{Popis tabuľky dole pod tabuľkou cez príkaz caption}
+\label{table1}
+\end{table}
+
+
+
+
+
+\subsection{Obrázky}
+
+Obrázky sa pridávajú cez príkaz \textbf{figure}, \textbf{includegraphics}.
+Referencia na obrázok cez príkaz  \textbf{ref} \ref{fig:obrazok1}.
+Možnosť definovať vlastnú šírku a výšku cez hranaté zátvorky. Napríklad
+\textit{...includegraphics[width=0.75\textbackslash textwidth]\{obrazky/obrazok1.PNG\}.}
+
+\begin{verbatim}
+\begin{figure}[h!t] %h!t alebo H
+   \includegraphics[width=1\textwidth]{obrazky/obrazok1.PNG}
+   \centering
+   \caption{Opis ....... .. }
+   \label{fig:obrazok1}
+\end{figure}
+\end{verbatim}
+
+
+\begin{figure}[h!t] %h!t alebo H
+% Ak súbor obrazky/obrazok1.PNG neexistuje, vykreslí sa náhradný rámik
+\IfFileExists{obrazky/obrazok1.PNG}{%
+  \includegraphics[width=0.75\textwidth]{obrazky/obrazok1.PNG}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.75\textwidth}{\centering Chýba súbor obrazky/obrazok1.PNG}}%
+}
+    \centering
+    \caption{Opis ....... .. }
+    \label{fig:obrazok1}
+\end{figure}
+
+
+\subsection{Matematické výrazy}
+
+Matematické výrazy sa vkladajú v texte začínajúc symbolom dolár a končiac dolárom.
+Na generovanie matematických výrazov môžete použiť \url{http://www.hostmath.com/}
+
+$$
+\frac{-b\pm\sqrt{b^2-4ac}}{2a}
+$$
+
+
+alebo
+\begin{verbatim}
+\begin{equation}
+      \frac{-b\pm\sqrt{b^2-4ac}}{2a}
+\end{equation}
+\end{verbatim}
+
+	\begin{equation}
+		\frac{-b\pm\sqrt{b^2-4ac}}{2a}
+	\end{equation}
+
+\section{Záver}
+
+Príkazy spomenuté v tejto kapitole sú najčastejšie používané a bohato vám zatiaľ stačia.
+Ostatné funkcionality si nájdite na internete.
+
+\clearpage
+
+% ============================================================================
+%  kapitoly/kapitola2.tex
+% ============================================================================
+\chapter{Analýza požiadaviek}
+
+
+5-10 strán textu.
+Opísať podrobnejšie to čo ste mali urobiť a aké tam boli požiadavky.
+Vhodné UML diagramy - USE CASE.
+\url{https://www.uml-diagrams.org/use-case-diagrams.html}
+
+\section{Názov sekcie}
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+
+\subsection{Názov pod sekcie}
+\clearpage
+
+% ============================================================================
+%  kapitoly/kapitola3.tex
+% ============================================================================
+\chapter{Implementácia xxxxxxx}
+
+Napíšete ako ste to implementovali, diagram tried, prípadne štruktúru.
+Nejaké zaujímavosti pri programovaní s ktorými ste sa stretli.
+Napísať tiež aké boli problémy pri implementovaní alebo challenges a ako ste ich vyriešili.
+
+
+\section{Názov sekcie}
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+
+\subsection{Názov pod sekcie}
+\clearpage
+
+% ============================================================================
+%  kapitoly/kapitola4.tex
+% ============================================================================
+\chapter{Zhrnutie výsledkov}
+
+Priebeh experimentov.
+Výsledky a vyhodnotenie experimentov.
+Prípadne ako bola aplikácia nasadená, alebo testovaná.
+
+\section{Názov sekcie}
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+
+\subsection{Názov pod sekcie}
+\clearpage
+
+\titleformat{\chapter}[display]{\normalfont\bfseries}{}{10pt}{\huge#1}
+
+% ============================================================================
+%  kapitoly/zaver.tex
+% ============================================================================
+\chapter*{Záver}
+
+
+1 strana - zhrnúť výsledky a obsah práce, prinosy prace
+
+\clearpage
+
+% ============================================================================
+%  Literatúra
+% ============================================================================
+\renewcommand{\bibsection}{\chapter{Zoznam použitej literatúry}}
+\addcontentsline{toc}{chapter}{Zoznam použitej literatúry}
+\nocite{*}  %sluzi pre debugovanie, zakomentovat
+\printbibliography[title=Zoznam použitej literatúry]
+
+% ============================================================================
+%  prilohy/zoznam_priloh.tex
+% ============================================================================
+\clearpage
+\cleardoublepage
+\chapter*{Zoznam príloh}
+\addcontentsline{toc}{chapter}{Zoznam príloh}
+
+\begin{description}
+\item[Príloha A : ] Použivateľská príručka
+\item[Príloha B : ] Programatorská príručka
+\item[Príloha C : ] Obsah CD disku
+\end{description}
+
+
+\cleardoublepage
+\pagenumbering{Roman}
+
+\addcontentsline{toc}{chapter}{Prílohy}
+
+\begin{titlepage}
+    \begin{center}
+		\vspace*{10cm}
+		\Huge \textbf{Prílohy}
+    \end{center}
+\end{titlepage}
+\setcounter{page}{2}
+\appendix
+\cleardoublepage
+
+\titleformat{\section}[display]{\normalfont}{}{10pt}{\huge#1}
+\titleformat{\subsection}{\Large\bf}{\textcolor{black}{#1}}{0pt}{}
+\clearpage
+
+ %Pripadne doplniť dalsie
+
+% ============================================================================
+%  prilohy/priloha1.tex
+% ============================================================================
+\addcontentsline{toc}{section}{Príloha A: Použivateľská príručka}
+\section*{\textbf{Príloha A}: Použivateľská príručka}
+
+
+\subsection{Názov }
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+\clearpage
+
+% ============================================================================
+%  prilohy/priloha2.tex
+% ============================================================================
+\addcontentsline{toc}{section}{Príloha B: Programatorská príručka}
+\section*{\textbf{Príloha B}: Programatorská príručka}
+
+\subsection{Názov sekcie}
+
+ text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...  text...
+
+\clearpage
+
+% ============================================================================
+%  prilohy/priloha3.tex
+% ============================================================================
+\addcontentsline{toc}{section}{Príloha C: Obsah CD disku}
+\section*{\textbf{Príloha C}: Obsah CD disku}
+
+Práca obsahuje prílohu vo formáte CD.
+
+\begin{itemize}
+    \item Text bakalárskej práce vo formáte PDF.
+    \item Zdrojové kódy.
+    \item Inštalačné súbory .\begin{itemize}
+        \item Java ...,
+        \item MySQL,
+        \item ... .
+    \end{itemize}
+\end{itemize}
+\clearpage
+
+\end{document}

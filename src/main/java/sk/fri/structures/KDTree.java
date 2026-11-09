@@ -142,6 +142,7 @@ public class KDTree<T, K> extends SpatialTree<T, KDPoint<K>> {
         return Optional.of(matches);
     }
 
+    /** Associates a node with its depth for iterative traversal. */
     private record NodeDepth<T, K>(KDNode<T, K> node, int depth) {}
 
     /**

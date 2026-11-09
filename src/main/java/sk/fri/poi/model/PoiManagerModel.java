@@ -27,6 +27,10 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class PoiManagerModel {
     private static final double EARTH_RADIUS_METERS = 6_371_000.0;
+    private static final double TEST_MIN_LATITUDE = 47.7;
+    private static final double TEST_MAX_LATITUDE = 49.6;
+    private static final double TEST_MIN_LONGITUDE = 16.8;
+    private static final double TEST_MAX_LONGITUDE = 22.6;
 
     private SpatialStructures structure;
     private final PoiCsvRepository csvRepository = new PoiCsvRepository();
@@ -68,6 +72,10 @@ public final class PoiManagerModel {
         SpatialTree<Poi, Point<Double>> replacementTree = createTree(newStructure);
         for (Poi poi : pois) {
             if (!replacementTree.insert(poi)) {
+                if (newStructure == SpatialStructures.QUAD_TREE) {
+                    throw new IllegalStateException("QuadTree reached its maximum depth (32) while inserting POI "
+                            + "with ID " + poi.id() + ". The spatial structure was not changed.");
+                }
                 throw new IllegalStateException("The selected spatial tree rejected POI with ID "
                         + poi.id() + ".");
             }
@@ -279,12 +287,14 @@ public final class PoiManagerModel {
         for (int index = 0; index < count; index++) {
             String id = UUID.randomUUID().toString();
             Instant now = Instant.now();
+            double latitude = ThreadLocalRandom.current().nextDouble(TEST_MIN_LATITUDE, TEST_MAX_LATITUDE);
+            double longitude = ThreadLocalRandom.current().nextDouble(TEST_MIN_LONGITUDE, TEST_MAX_LONGITUDE);
             Poi poi = new Poi(
                     id,
                     "TestPoint-" + id.substring(0, 8),
                     "Generated test point",
-                    ThreadLocalRandom.current().nextDouble(-90.0, 90.0),
-                    ThreadLocalRandom.current().nextDouble(-180.0, 180.0),
+                    latitude,
+                    longitude,
                     "",
                     now,
                     now

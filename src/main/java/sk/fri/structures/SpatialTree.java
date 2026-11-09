@@ -14,6 +14,11 @@ import java.util.Optional;
 public abstract class SpatialTree<T, P> {
     private final String name;
 
+    /**
+     * Creates a named spatial tree.
+     *
+     * @param name name of the implementation
+     */
     protected SpatialTree(String name) {
         this.name = name;
     }

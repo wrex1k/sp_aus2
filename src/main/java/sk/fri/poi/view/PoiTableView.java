@@ -36,7 +36,7 @@ public final class PoiTableView extends TableView<Poi> {
      */
     public PoiTableView(Predicate<Poi> isDeleted) {
         setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        setPlaceholder(new Label("No POIs to display."));
+        setPlaceholder(new Label("Nothing to display."));
         TableColumn<Poi, Poi> checkedColumn = new TableColumn<>();
         checkedColumn.setGraphic(selectAll);
         checkedColumn.setPrefWidth(45);

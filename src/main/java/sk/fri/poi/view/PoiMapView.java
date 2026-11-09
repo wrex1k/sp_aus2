@@ -1,198 +1,298 @@
 package sk.fri.poi.view;
 
-import javafx.concurrent.Worker;
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import sk.fri.poi.model.Poi;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-/** Displays the current POIs on an interactive OpenStreetMap map. */
+/** Displays an offline map of Slovakia and the POIs in the current table. */
 public final class PoiMapView extends StackPane {
-    private final WebEngine engine;
-    private final Label coordinates = new Label("Latitude: -  Longitude: -");
-    private final Label mapError = new Label();
+
+    private static final double LAT = 48.68, LON = 19.70;
+    private static final double MIN_ZOOM = 0.65, MAX_ZOOM = 24;
+    private static final Color ACTIVE = Color.web("#397fa8");
+    private static final Color DELETED = Color.web("#ce433e");
+    private static final Color SELECTED = Color.ORANGE;
+
+    private final Canvas canvas = new Canvas();
+    private final Label coordinates = new Label();
+
     private final Predicate<Poi> isDeleted;
     private final Consumer<Poi> onSelect;
     private final BiConsumer<Double, Double> onAdd;
-    private List<Poi> items = List.of();
-    private Poi selected;
+    private final List<City> cities = List.of(
+            new City("Bratislava", 48.1486, 17.1077, -57, -8),
+            new City("Trnava", 48.3774, 17.5872, 6, -7),
+            new City("Trenčín", 48.8945, 18.0444, -43, -8),
+            new City("Nitra", 48.3064, 18.0764, 6, 13),
+            new City("Žilina", 49.2231, 18.7394, 6, -8),
+            new City("Martin", 49.0650, 18.9210, 6, 13),
+            new City("Ružomberok", 49.0748, 19.3075, 6, -8),
+            new City("Banská Bystrica", 48.7363, 19.1462, -88, 14),
+            new City("Poprad", 49.0556, 20.2970, -31, -8),
+            new City("Prešov", 48.9984, 21.2339, -44, -8),
+            new City("Košice", 48.7164, 21.2611, 6, 13)
+    );
+
+    private final double[][] border;
+    private List<Poi> points = new ArrayList<>();
     private Set<String> checkedIds = Set.of();
-    private boolean ready;
+    private Poi selected;
+
+    private double centerLat = LAT, centerLon = LON, zoom = 1;
+    private double pressX, pressY, previousX = Double.NaN, previousY = Double.NaN;
+    private int previousIndex = -1;
+    private boolean dragging;
 
     /**
-     * Creates the map and its restricted selection and location callbacks.
+     * Creates the map and connects its selection and creation actions.
      *
-     * @param isDeleted reports soft-deleted records
-     * @param onSelect selects a displayed POI
-     * @param onAdd opens the POI form at a map position
+     * @param isDeleted reports whether a POI is soft-deleted
+     * @param onSelect selects a POI clicked on the map
+     * @param onAdd creates a POI at the clicked latitude and longitude
+     * @throws IllegalStateException if the offline border resource cannot be loaded
      */
     public PoiMapView(Predicate<Poi> isDeleted, Consumer<Poi> onSelect,
                       BiConsumer<Double, Double> onAdd) {
         this.isDeleted = isDeleted;
         this.onSelect = onSelect;
         this.onAdd = onAdd;
-        setMinSize(220, 220);
-        WebView web = new WebView();
-        engine = web.getEngine();
-        engine.setUserAgent(engine.getUserAgent() + " POIManager/1.0");
-        coordinates.setStyle("-fx-background-color: rgba(255,255,255,0.9); -fx-padding: 5;");
-        coordinates.setMouseTransparent(true);
-        mapError.setWrapText(true);
-        mapError.setStyle("-fx-background-color: white; -fx-text-fill: firebrick; -fx-padding: 8;");
-        mapError.setVisible(false);
-        StackPane.setAlignment(coordinates, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(coordinates, new Insets(0, 5, 25, 0));
-        StackPane.setAlignment(mapError, Pos.TOP_CENTER);
-        getChildren().addAll(web, coordinates, mapError);
 
-        engine.setOnAlert(event -> handleMapEvent(event.getData()));
-        engine.getLoadWorker().stateProperty().addListener((observable, oldState, state) -> {
-            if (state == Worker.State.SUCCEEDED) {
-                ready = Boolean.TRUE.equals(engine.executeScript("typeof updatePois === 'function'"));
-                if (ready) {
-                    updateMarkers();
-                } else {
-                    showMapError("Map could not be loaded. Check your internet connection and restart.");
-                }
-            } else if (state == Worker.State.FAILED) {
-                showMapError("Map could not be loaded. Check your internet connection and restart.");
-            }
+        try {
+            border = loadBorder();
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not load Slovakia map.", e);
+        }
+
+        setMinSize(220, 220);
+        coordinates.setStyle("-fx-background-color: white; -fx-padding: 5;");
+
+        StackPane.setAlignment(coordinates, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(coordinates, new Insets(7));
+
+        getChildren().addAll(canvas, coordinates);
+
+        canvas.setOnMouseMoved(e -> updateCoordinates(e.getX(), e.getY()));
+        canvas.setOnMousePressed(e -> {
+            pressX = e.getX();
+            pressY = e.getY();
+            dragging = false;
         });
-        engine.loadContent(MAP_HTML);
+        canvas.setOnMouseDragged(e -> {
+            if (Math.hypot(e.getX() - pressX, e.getY() - pressY) > 4)
+                dragging = true;
+            updateCoordinates(e.getX(), e.getY());
+        });
+        canvas.setOnMouseReleased(e -> {
+            if (e.getButton() != MouseButton.PRIMARY) return;
+            if (dragging) {
+                centerLon -= (e.getX() - pressX) / (scale() * lonScale());
+                centerLat += (e.getY() - pressY) / scale();
+                centerLat = Math.max(-85, Math.min(85, centerLat));
+                previousIndex = -1;
+                render();
+            } else handleClick(e.getX(), e.getY());
+        });
+        canvas.setOnScroll(e -> {
+            double[] anchor = unproject(e.getX(), e.getY());
+            zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM,
+                    zoom * (e.getDeltaY() > 0 ? 1.2 : 1 / 1.2)));
+            centerLon = anchor[1] - (e.getX() - canvas.getWidth() / 2) / (scale() * lonScale());
+            centerLat = anchor[0] + (e.getY() - canvas.getHeight() / 2) / scale();
+            previousIndex = -1;
+            render();
+            e.consume();
+        });
     }
 
     /**
-     * Updates marker positions and colors without changing map zoom or position.
+     * Updates the POIs and selection displayed on the map.
      *
-     * @param items records displayed in the table
-     * @param selected focused row, or null
-     * @param checkedIds IDs selected for bulk operations
+     * @param items POIs in the current table
+     * @param selected focused POI, or null if none is selected
+     * @param checkedIds IDs selected using the table checkboxes
      */
     public void showPois(List<Poi> items, Poi selected, Set<String> checkedIds) {
-        this.items = List.copyOf(items);
+        points = new ArrayList<>(items);
         this.selected = selected;
         this.checkedIds = Set.copyOf(checkedIds);
-        updateMarkers();
+        previousIndex = -1;
+        render();
     }
 
-    /** Sends only validated numeric coordinates, indices, and color codes to JavaScript. */
-    private void updateMarkers() {
-        if (!ready) {
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren();
+        canvas.setWidth(getWidth());
+        canvas.setHeight(getHeight());
+        canvas.relocate(0, 0);
+        render();
+    }
+
+    /** Draws the border, cities and visible POIs at the current zoom and center. */
+    private void render() {
+        double w = canvas.getWidth(), h = canvas.getHeight();
+        if (w < 2 || h < 2) return;
+
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.web("#eaf1f3"));
+        gc.fillRect(0, 0, w, h);
+
+        gc.beginPath();
+        gc.moveTo(x(border[0][0]), y(border[0][1]));
+        for (int i = 1; i < border.length; i++)
+            gc.lineTo(x(border[i][0]), y(border[i][1]));
+        gc.closePath();
+        gc.setFill(Color.web("#f4f7ed"));
+        gc.fill();
+        gc.setStroke(Color.web("#748874"));
+        gc.setLineWidth(1.2);
+        gc.stroke();
+
+        gc.setFont(Font.font(11));
+        for (City city : cities) {
+            double cx = x(city.lon), cy = y(city.lat);
+            gc.setFill(Color.web("#65716d"));
+            gc.fillOval(cx - 2, cy - 2, 4, 4);
+            gc.setFill(Color.web("#343c39"));
+            gc.fillText(city.name, cx + city.dx, cy + city.dy);
+        }
+
+        for (Poi poi : points) {
+            double px = x(poi.longitude()), py = y(poi.latitude());
+            if (px < -10 || py < -10 || px > w + 10 || py > h + 10) continue;
+
+            gc.setFill(poi.equals(selected) || checkedIds.contains(poi.id())
+                    ? SELECTED : isDeleted.test(poi) ? DELETED : ACTIVE);
+            gc.fillOval(px - 4, py - 4, 8, 8);
+        }
+    }
+
+    /** Cycles through overlapping POIs or starts creation inside the border. */
+    private void handleClick(double px, double py) {
+        List<Integer> hits = new ArrayList<>();
+        for (int i = 0; i < points.size(); i++) {
+            Poi poi = points.get(i);
+            if (Math.hypot(x(poi.longitude()) - px, y(poi.latitude()) - py) <= 10)
+                hits.add(i);
+        }
+
+        if (!hits.isEmpty()) {
+            boolean same = Math.hypot(px - previousX, py - previousY) <= 10;
+            int previous = same ? hits.indexOf(previousIndex) : -1;
+            int index = hits.get((previous + 1) % hits.size());
+            previousX = px;
+            previousY = py;
+            previousIndex = index;
+            onSelect.accept(points.get(index));
             return;
         }
-        StringBuilder script = new StringBuilder("updatePois([");
-        for (int index = 0; index < items.size(); index++) {
-            if (index > 0) {
-                script.append(',');
-            }
-            Poi poi = items.get(index);
-            int color = poi.equals(selected) || checkedIds.contains(poi.id()) ? 2 : isDeleted.test(poi) ? 1 : 0;
-            script.append('[').append(poi.latitude()).append(',').append(poi.longitude())
-                    .append(',').append(index).append(',').append(color).append(']');
+
+        double[] position = unproject(px, py);
+        if (contains(position[1], position[0]))
+            onAdd.accept(position[0], position[1]);
+    }
+
+    /** Updates the displayed coordinates from a canvas position. */
+    private void updateCoordinates(double px, double py) {
+        double[] position = unproject(px, py);
+        coordinates.setText("Latitude: " + position[0] + "  Longitude: " + position[1]);
+    }
+
+    /** Converts a canvas position to latitude and longitude. */
+    private double[] unproject(double px, double py) {
+        return new double[]{
+                centerLat - (py - canvas.getHeight() / 2) / scale(),
+                centerLon + (px - canvas.getWidth() / 2) / (scale() * lonScale())
+        };
+    }
+
+    /** Converts longitude to a horizontal canvas position. */
+    private double x(double lon) {
+        return canvas.getWidth() / 2 + (lon - centerLon) * lonScale() * scale();
+    }
+
+    /** Converts latitude to a vertical canvas position. */
+    private double y(double lat) {
+        return canvas.getHeight() / 2 - (lat - centerLat) * scale();
+    }
+
+    /** Returns the current canvas scale in pixels per latitude degree. */
+    private double scale() {
+        return Math.min(
+                canvas.getWidth() / (6.4 * lonScale()),
+                canvas.getHeight() / 2.15
+        ) * zoom;
+    }
+
+    /** Returns the longitude correction for the current center latitude. */
+    private double lonScale() {
+        return Math.cos(Math.toRadians(centerLat));
+    }
+
+    /**
+     * Tests whether a geographic position is inside the Slovakia border polygon.
+     *
+     * @param lon longitude in decimal degrees
+     * @param lat latitude in decimal degrees
+     * @return true if the position is inside the polygon
+     */
+    public boolean contains(double lon, double lat) {
+        boolean inside = false;
+        for (int i = 0, j = border.length - 1; i < border.length; j = i++) {
+            double[] a = border[i], b = border[j];
+            if ((a[1] > lat) != (b[1] > lat)
+                    && lon < (b[0] - a[0]) * (lat - a[1]) / (b[1] - a[1]) + a[0])
+                inside = !inside;
         }
-        script.append("])");
-        engine.executeScript(script.toString());
+        return inside;
     }
 
-    /** Handles only the known map events and validates their parameters. */
-    private void handleMapEvent(String message) {
-        String[] parts = message.split(":", -1);
-        try {
-            if (parts.length == 2 && parts[0].equals("select")) {
-                int index = Integer.parseInt(parts[1]);
-                if (index >= 0 && index < items.size()) {
-                    Poi poi = items.get(index);
-                    Platform.runLater(() -> onSelect.accept(poi));
+    /** Loads longitude-latitude pairs from the bundled border resource. */
+    private static double[][] loadBorder() throws IOException {
+        InputStream input = PoiMapView.class.getResourceAsStream("/map/slovakia-border.txt");
+        if (input == null) throw new IOException("Missing Slovakia map resource.");
+
+        try (BufferedReader reader = new BufferedReader(
+                new java.io.InputStreamReader(input, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+
+                String[] values = line.split("\\s+");
+                double[][] result = new double[values.length][2];
+                for (int i = 0; i < values.length; i++) {
+                    String[] pair = values[i].split(",", -1);
+                    if (pair.length != 2) throw new IOException("Invalid map coordinate.");
+                    result[i][0] = Double.parseDouble(pair[0]);
+                    result[i][1] = Double.parseDouble(pair[1]);
                 }
-            } else if (message.equals("tiles-error")) {
-                showMapError("Some map tiles could not be loaded. Check your internet connection.");
-            } else if (parts.length == 3 && (parts[0].equals("move") || parts[0].equals("add"))) {
-                double latitude = Double.parseDouble(parts[1]);
-                double longitude = Double.parseDouble(parts[2]);
-                if (Double.isFinite(latitude) && latitude >= -90 && latitude <= 90
-                        && Double.isFinite(longitude) && longitude >= -180 && longitude <= 180) {
-                    if (parts[0].equals("move")) {
-                        coordinates.setText("Latitude: " + latitude + "  Longitude: " + longitude);
-                    } else {
-                        Platform.runLater(() -> onAdd.accept(latitude, longitude));
-                    }
-                }
+                if (result.length >= 4) return result;
             }
-        } catch (NumberFormatException exception) {
-            showMapError("The map sent an invalid event.");
+        } catch (NumberFormatException e) {
+            throw new IOException("Invalid Slovakia map coordinates.", e);
         }
+        throw new IOException("Slovakia border not found.");
     }
 
-    /** Displays a map-loading or communication error. */
-    private void showMapError(String message) {
-        mapError.setText(message);
-        mapError.setVisible(true);
-    }
-
-    private static final String MAP_HTML = """
-            <!doctype html>
-            <html><head><meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-              integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-            <style>html,body,#map{height:100%;margin:0} .leaflet-control-attribution{font-size:10px}</style>
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-              integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-            </head><body><div id="map"></div>
-            <script>
-            if (typeof L !== 'undefined') {
-              const map = L.map('map').setView([48.72, 19.48], 7);
-              const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-              }).addTo(map);
-              let tileErrorReported = false;
-              tiles.on('tileerror', () => {
-                if (!tileErrorReported) {
-                  tileErrorReported = true;
-                  alert('tiles-error');
-                }
-              });
-              let markers = [], current = [], cycle = -1;
-              const selectMarker = e => {
-                L.DomEvent.stopPropagation(e);
-                const point = map.latLngToContainerPoint(e.latlng);
-                const hits = current.filter(p => map.latLngToContainerPoint([p[0], p[1]]).distanceTo(point) <= 10);
-                if (hits.length) {
-                  const previous = hits.findIndex(p => p[2] === cycle);
-                  cycle = hits[(previous + 1) % hits.length][2];
-                  alert('select:' + cycle);
-                };
-              }
-              window.updatePois = function (points) {
-                markers.forEach(marker => map.removeLayer(marker));
-                current = points;
-                markers = points.map(p => {
-                  const color = p[3] === 2 ? '#ff8c00' : p[3] === 1 ? '#d02020' : '#4682b4';
-                  const marker = L.circleMarker([p[0], p[1]], {radius: 6, color: color,
-                    fillColor: color, fillOpacity: 1, weight: 1}).addTo(map);
-                  marker.on('click', selectMarker);
-                  return marker;
-                });
-              };
-              map.on('click', e => {
-                const point = e.latlng.wrap();
-                alert('add:' + point.lat + ':' + point.lng);
-              });
-              map.on('mousemove', e => {
-                const point = e.latlng.wrap();
-                alert('move:' + point.lat + ':' + point.lng);
-              });
-            }
-            </script></body></html>
-            """;
+    /** Holds a city's coordinates and label offsets on the canvas. */
+    private record City(String name, double lat, double lon, double dx, double dy) {}
 }

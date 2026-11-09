@@ -11,10 +11,13 @@ import sk.fri.structures.*;
 
 import java.util.*;
 
+/** Verifies insertion, exact lookup and range searches across spatial trees. */
 public class TreeTester {
 
+    /** Random source used to select points for insertion and lookup checks. */
     public static Random random = new Random();
 
+    /** Creates the tree implementations used for testing and benchmarking. */
     static List<SpatialTree<CsvPoint, Point<Double>>> get2DTrees() {
         return List.of(
                 new KDTree2DAdapter<>(new KDTree<>(CsvPoint::toKDPoint, Double::compare, 2)), //kdtree using 2d (kdpoint) (k=2)
@@ -30,6 +33,13 @@ public class TreeTester {
         );
     }
 
+    /**
+     * Runs insertion, lookup and range checks for each available tree.
+     *
+     * @param points points used in the checks
+     * @param areas rectangular areas used in range checks
+     * @throws AssertionError if a tree returns incorrect results
+     */
     public static void testTrees(List<CsvPoint> points, List<Area> areas) {
 
         for (SpatialTree<CsvPoint, Point<Double>> tree : get2DTrees()) {
@@ -45,6 +55,13 @@ public class TreeTester {
         System.out.println("all spatial tree tests passed successfully");
     }
 
+    /**
+     * Inserts a sample of points and checks randomly selected inserted values.
+     *
+     * @param tree tree to test
+     * @param points source points for random insertion
+     * @throws AssertionError if an inserted point cannot be found
+     */
     public static void verifyRandomInsertAndFind(
             SpatialTree<CsvPoint, Point<Double>> tree,
             List<CsvPoint> points
@@ -79,6 +96,7 @@ public class TreeTester {
         System.out.println(tree.getName() + " rejected " + rejectedPoints + " insertions");
     }
 
+    /** Compares each range query with a scan of successfully inserted points. */
     private static void verifyRangeSearch(
             SpatialTree<CsvPoint, Point<Double>> tree,
             List<CsvPoint> points,

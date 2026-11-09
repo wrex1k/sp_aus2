@@ -67,7 +67,7 @@ public final class PoiManagerFxApplication extends Application {
         while (true) {
             Optional<CsvSelection> selection = chooseCsvFile(stage);
             if (selection.isEmpty()) {
-                stage.close();
+                Platform.exit();
                 return;
             }
             try {
@@ -84,26 +84,27 @@ public final class PoiManagerFxApplication extends Application {
             }
         }
         createLayout();
-        showAllPois();
+        showAllPois(1);
         stage.show();
     }
 
     /** Presents the two startup actions and opens the corresponding file chooser. */
     private Optional<CsvSelection> chooseCsvFile(Stage owner) {
         while (true) {
-            ButtonType create = new ButtonType("Create new file", ButtonBar.ButtonData.YES);
-            ButtonType open = new ButtonType("Open existing file", ButtonBar.ButtonData.NO);
+            ButtonType create = new ButtonType("New file", ButtonBar.ButtonData.YES);
+            ButtonType open = new ButtonType("Open file", ButtonBar.ButtonData.NO);
             Dialog<ButtonType> dialog = new Dialog<>();
             dialog.initOwner(owner);
             dialog.setTitle("POI Manager");
-            dialog.setHeaderText("Create a new CSV file or open an existing one");
+            dialog.setHeaderText("Welcome in a POI Manager. Choose an action to start.");
             dialog.getDialogPane().getButtonTypes().addAll(create, open);
+            dialog.setResultConverter(button -> button);
             Optional<ButtonType> choice = dialog.showAndWait();
-            if (choice.isEmpty()) {
+            if (choice.isEmpty() || (choice.get() != create && choice.get() != open)) {
                 return Optional.empty();
             }
             FileChooser chooser = new FileChooser();
-            chooser.setTitle(choice.get() == create ? "Create CSV file" : "Open CSV file");
+            chooser.setTitle(choice.get() == create ? "New CSV file" : "Open CSV file");
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files", "*.csv"));
             File selectedFile;
             if (choice.get() == create) {
@@ -154,9 +155,9 @@ public final class PoiManagerFxApplication extends Application {
     /** Adds file actions and the runtime spatial-structure selector to the menu bar. */
     private MenuBar createOptionsMenu() {
         Menu file = new Menu("File");
-        MenuItem openExisting = new MenuItem("Open existing file...");
+        MenuItem openExisting = new MenuItem("Open file");
         openExisting.setOnAction(event -> openExistingFile());
-        MenuItem createNew = new MenuItem("Create new file...");
+        MenuItem createNew = new MenuItem("New file");
         createNew.setOnAction(event -> createNewFile());
         file.getItems().addAll(openExisting, createNew);
 
@@ -166,8 +167,9 @@ public final class PoiManagerFxApplication extends Application {
         for (SpatialStructures structure : SpatialStructures.values()) {
             RadioMenuItem item = new RadioMenuItem(structureName(structure));
             item.setToggleGroup(group);
+            item.setUserData(structure);
             item.setSelected(controller.getSpatialStructure() == structure);
-            item.setOnAction(event -> changeSpatialStructure(structure));
+            item.setOnAction(event -> changeSpatialStructure(structure, group));
             structures.getItems().add(item);
         }
         options.getItems().add(structures);
@@ -213,6 +215,7 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
+    /** Creates a file chooser configured for CSV files. */
     private FileChooser csvFileChooser(String title) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(title);
@@ -224,6 +227,7 @@ public final class PoiManagerFxApplication extends Application {
         return chooser;
     }
 
+    /** Confirms a file switch when the current data might be discarded. */
     private boolean confirmFileSwitch(Path selectedPath, boolean creating) {
         if (!creating && csvPath != null
                 && csvPath.toAbsolutePath().normalize().equals(selectedPath.toAbsolutePath().normalize())) {
@@ -238,19 +242,26 @@ public final class PoiManagerFxApplication extends Application {
         return confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
+    /** Resets selection and displays the default fraction after switching files. */
     private void resetResultsAfterFileSwitch(String message) {
         table.checkedIds().clear();
         currentQuery = controller::getAllPoisIncludingDeleted;
         allResults = true;
         currentResults = List.of();
-        showAllPois();
+        showAllPois(1);
         setStatus(message);
     }
 
     /** Rebuilds the selected tree while preserving POIs and current search results. */
-    private void changeSpatialStructure(SpatialStructures structure) {
+    private void changeSpatialStructure(SpatialStructures structure, ToggleGroup group) {
         try {
-            controller.setSpatialStructure(structure);
+            try {
+                controller.setSpatialStructure(structure);
+            } finally {
+                group.getToggles().stream()
+                        .filter(toggle -> toggle.getUserData() == controller.getSpatialStructure())
+                        .findFirst().ifPresent(group::selectToggle);
+            }
             refreshResults();
             setStatus("Spatial structure changed to " + structureName(structure) + ".");
         } catch (IllegalArgumentException | IllegalStateException exception) {
@@ -258,6 +269,7 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
+    /** Returns the display name for a spatial structure. */
     private String structureName(SpatialStructures structure) {
         return switch (structure) {
             case KD_TREE -> "KD Tree";
@@ -266,6 +278,7 @@ public final class PoiManagerFxApplication extends Application {
         };
     }
 
+    /** Formats an exception and its causes for an error dialog. */
     private String exceptionDetails(Throwable exception) {
         StringBuilder details = new StringBuilder();
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
@@ -280,6 +293,7 @@ public final class PoiManagerFxApplication extends Application {
         return details.toString();
     }
 
+    /** Holds a selected CSV path and whether it should be created. */
     private record CsvSelection(Path path, boolean createNew) {
     }
 
@@ -451,7 +465,7 @@ public final class PoiManagerFxApplication extends Application {
                 throw new IllegalArgumentException("Count must be a positive whole number.");
             }
             int generated = controller.generateRandom(value);
-            refreshResults();
+            showAllPois(1);
             setStatus("Generated POIs: " + generated + ".");
         });
         dialog.showAndWait();
@@ -467,9 +481,20 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
-    /** Shows all records as the current filtering context. */
-    private void showAllPois() {
-        startQuery(controller::getAllPoisIncludingDeleted, true, "Showing all POIs.");
+    /** Shows the selected cumulative fraction of all records as the current filtering context. */
+    private void showAllPois(int part) {
+        if (part < 1 || part > 10) {
+            throw new IllegalArgumentException("POI list part must be between 1 and 10.");
+        }
+        Supplier<List<Poi>> query = () -> {
+            List<Poi> all = controller.getAllPoisIncludingDeleted();
+            int to = (int) (((long) all.size() * part + 9) / 10);
+            return all.subList(0, to);
+        };
+        controls.setShowAllPart(part);
+        String message = part == 10 ? "Showing all POIs."
+                : "Showing first " + part + "/10 of all POIs.";
+        startQuery(query, true, message);
     }
 
     /** Records a query and displays its current results. */
