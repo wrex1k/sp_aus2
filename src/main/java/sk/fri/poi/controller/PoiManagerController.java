@@ -2,6 +2,7 @@ package sk.fri.poi.controller;
 
 import sk.fri.poi.model.Poi;
 import sk.fri.poi.model.PoiManagerModel;
+import sk.fri.poi.model.SpatialStructures;
 import sk.fri.poi.view.PoiManagerView;
 import sk.fri.poi.view.PoiManagerView.CreateInput;
 import sk.fri.poi.view.PoiManagerView.EditInput;
@@ -11,7 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Coordinates requests between the POI model and the console view.
+ * Coordinates requests between the POI model and a user interface.
  */
 public final class PoiManagerController {
     private final PoiManagerModel model;
@@ -29,6 +30,15 @@ public final class PoiManagerController {
         this.model = model;
         this.view = view;
         this.csvPath = csvPath;
+    }
+
+    /**
+     * Creates a controller for a graphical view that sends values directly to its operations.
+     *
+     * @param model application model
+     */
+    public PoiManagerController(PoiManagerModel model) {
+        this(model, null, null);
     }
 
     /**
@@ -79,6 +89,160 @@ public final class PoiManagerController {
     }
 
     /**
+     * Returns all active POIs.
+     *
+     * @return active POIs
+     */
+    public List<Poi> getAllPois() {
+        return model.getAll();
+    }
+
+    /**
+     * Returns all stored POIs, including soft-deleted records.
+     *
+     * @return all stored POIs
+     */
+    public List<Poi> getAllPoisIncludingDeleted() {
+        return model.getAllIncludingDeleted();
+    }
+
+    /**
+     * Checks whether a POI is soft-deleted.
+     *
+     * @param poi POI to check
+     * @return true if the POI is deleted
+     */
+    public boolean isDeleted(Poi poi) {
+        return model.isDeleted(poi);
+    }
+
+    /**
+     * Changes the spatial index while preserving all POIs.
+     *
+     * @param structure replacement spatial structure
+     */
+    public void setSpatialStructure(SpatialStructures structure) {
+        model.setStructure(structure);
+    }
+
+    /** Returns the active spatial structure. */
+    public SpatialStructures getSpatialStructure() {
+        return model.getStructure();
+    }
+
+    /**
+     * Finds POIs at an exact GPS position.
+     *
+     * @param latitude latitude in decimal degrees
+     * @param longitude longitude in decimal degrees
+     * @return matching POIs
+     */
+    public List<Poi> findAt(double latitude, double longitude) {
+        return model.findAt(latitude, longitude);
+    }
+
+    /**
+     * Finds POIs within a radius of a GPS position.
+     *
+     * @param latitude center latitude
+     * @param longitude center longitude
+     * @param radiusMeters search radius in meters
+     * @return matching POIs
+     */
+    public List<Poi> findNearby(double latitude, double longitude, double radiusMeters) {
+        return model.findNearby(latitude, longitude, radiusMeters);
+    }
+
+    /**
+     * Creates a POI from values supplied by the view.
+     *
+     * @param input new POI values
+     * @return created POI
+     */
+    public Poi create(CreateInput input) {
+        return model.create(
+                input.name(), input.description(), input.latitude(), input.longitude(), input.address()
+        );
+    }
+
+    /**
+     * Updates a POI using values supplied by the view.
+     *
+     * @param current POI to update
+     * @param input replacement values
+     * @return updated POI
+     */
+    public Poi update(Poi current, EditInput input) {
+        return model.update(
+                current.id(),
+                input.name() == null ? current.name() : input.name(),
+                input.description() == null ? current.description() : input.description(),
+                input.latitude() == null ? current.latitude() : input.latitude(),
+                input.longitude() == null ? current.longitude() : input.longitude(),
+                input.address() == null ? current.address() : input.address()
+        );
+    }
+
+    /**
+     * Searches names within an inclusive rectangular area.
+     *
+     * @param searchText text to find in POI names
+     * @param minLatitude minimum latitude
+     * @param minLongitude minimum longitude
+     * @param maxLatitude maximum latitude
+     * @param maxLongitude maximum longitude
+     * @return matching POIs
+     */
+    public List<Poi> findByNameInArea(
+            String searchText,
+            double minLatitude,
+            double minLongitude,
+            double maxLatitude,
+            double maxLongitude
+    ) {
+        return model.findByNameInArea(searchText, minLatitude, minLongitude, maxLatitude, maxLongitude);
+    }
+
+    /**
+     * Soft-deletes the selected POI.
+     *
+     * @param poi POI to delete
+     */
+    public void delete(Poi poi) {
+        model.delete(poi);
+    }
+
+    /**
+     * Generates test POIs through the model.
+     *
+     * @param count number of POIs to generate
+     * @return number of generated POIs
+     */
+    public int generateRandom(int count) {
+        return model.generateRandom(count);
+    }
+
+    /**
+     * Loads POIs from a selected CSV file.
+     *
+     * @param path CSV file path
+     * @throws IOException if the file cannot be read
+     */
+    public void loadFromCsv(Path path) throws IOException {
+        model.loadFromCsv(path);
+    }
+
+    /**
+     * Saves active POIs to a selected CSV file.
+     *
+     * @param path CSV file path
+     * @throws IOException if the file cannot be written
+     */
+    public void saveToCsv(Path path) throws IOException {
+        model.saveToCsv(path);
+    }
+
+    /**
      * Finds and displays POIs at the entered GPS position.
      */
     private void findAt() {
@@ -100,9 +264,7 @@ public final class PoiManagerController {
      */
     private void create() {
         CreateInput input = view.askCreateInput();
-        Poi created = model.create(
-                input.name(), input.description(), input.latitude(), input.longitude(), input.address()
-        );
+        Poi created = create(input);
         view.showMessage("Created POI with ID: " + created.id());
     }
 
@@ -120,14 +282,7 @@ public final class PoiManagerController {
 
         Poi current = candidates.get(selected);
         EditInput input = view.askEditInput(current);
-        Poi updated = model.update(
-                current.id(),
-                input.name() == null ? current.name() : input.name(),
-                input.description() == null ? current.description() : input.description(),
-                input.latitude() == null ? current.latitude() : input.latitude(),
-                input.longitude() == null ? current.longitude() : input.longitude(),
-                input.address() == null ? current.address() : input.address()
-        );
+        Poi updated = update(current, input);
         view.showMessage("Updated POI with ID: " + updated.id());
     }
 
@@ -150,7 +305,7 @@ public final class PoiManagerController {
         int selected = view.selectPoi(candidates);
         if (selected >= 0) {
             Poi poi = candidates.get(selected);
-            model.delete(poi);
+            delete(poi);
             view.showMessage("Deleted POI with ID: " + poi.id());
         }
     }
@@ -159,7 +314,7 @@ public final class PoiManagerController {
      * Generates and reports the requested number of test POIs.
      */
     private void generate() {
-        int count = model.generateRandom(view.askGeneratedCount());
+        int count = generateRandom(view.askGeneratedCount());
         view.showMessage("Generated POIs: " + count);
     }
 
@@ -169,7 +324,7 @@ public final class PoiManagerController {
      * @throws IOException if the file cannot be written
      */
     private void save() throws IOException {
-        model.saveToCsv(csvPath);
+        saveToCsv(csvPath);
         view.showMessage("Saved POIs: " + model.getAll().size());
     }
 }

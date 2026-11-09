@@ -1,24 +1,29 @@
 package sk.fri;
 
+import javafx.application.Application;
 import sk.fri.poi.controller.PoiManagerController;
 import sk.fri.poi.model.PoiManagerModel;
 import sk.fri.poi.model.SpatialStructures;
 import sk.fri.poi.view.ConsoleView;
 import sk.fri.poi.view.PoiManagerView;
+import sk.fri.poi.view.PoiManagerFxApplication;
 
 import java.nio.file.Path;
 
 /**
- * Starts the console version of POI Manager.
+ * Starts the JavaFX version of POI Manager.
  */
 public class MainApplication {
     /**
-     * Selects a tree and CSV file, then starts the application controller.
+     * Launches the JavaFX application.
      *
      * @param args command-line arguments (not used)
      */
     public static void main(String[] args) {
-         PoiManagerView view = new ConsoleView();
+        Application.launch(PoiManagerFxApplication.class, args);
+
+        /*
+        PoiManagerView view = new ConsoleView();
         SpatialStructures structure = view.chooseStructure();
         Path csvPath = Path.of(view.askCsvPath());
         PoiManagerModel model = new PoiManagerModel(structure);
@@ -26,5 +31,6 @@ public class MainApplication {
         if (controller.loadAtStartup()) {
             controller.run();
         }
+        */
     }
 }

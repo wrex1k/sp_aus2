@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class PoiManagerModel {
     private static final double EARTH_RADIUS_METERS = 6_371_000.0;
 
-    private final SpatialStructures structure;
+    private SpatialStructures structure;
     private final PoiCsvRepository csvRepository = new PoiCsvRepository();
     private final Set<String> deletedIds = new HashSet<>();
     private List<Poi> pois = new ArrayList<>();
@@ -42,7 +41,7 @@ public final class PoiManagerModel {
      */
     public PoiManagerModel(SpatialStructures structure) {
         this.structure = structure;
-        this.tree = createTree();
+        this.tree = createTree(structure);
     }
 
     /**
@@ -55,12 +54,54 @@ public final class PoiManagerModel {
     }
 
     /**
+     * Rebuilds the selected spatial index without changing stored POIs or deleted state.
+     *
+     * @param newStructure spatial tree implementation to use
+     */
+    public void setStructure(SpatialStructures newStructure) {
+        if (newStructure == null) {
+            throw new IllegalArgumentException("Spatial structure is required.");
+        }
+        if (newStructure == structure) {
+            return;
+        }
+        SpatialTree<Poi, Point<Double>> replacementTree = createTree(newStructure);
+        for (Poi poi : pois) {
+            if (!replacementTree.insert(poi)) {
+                throw new IllegalStateException("The selected spatial tree rejected POI with ID "
+                        + poi.id() + ".");
+            }
+        }
+        tree = replacementTree;
+        structure = newStructure;
+    }
+
+    /**
      * Returns all POIs that have not been soft-deleted.
      *
      * @return an immutable list of active POIs
      */
     public List<Poi> getAll() {
         return pois.stream().filter(poi -> !deletedIds.contains(poi.id())).toList();
+    }
+
+    /**
+     * Returns all stored POIs, including soft-deleted records.
+     *
+     * @return an immutable snapshot of all stored POIs
+     */
+    public List<Poi> getAllIncludingDeleted() {
+        return List.copyOf(pois);
+    }
+
+    /**
+     * Checks whether a POI has been soft-deleted.
+     *
+     * @param poi POI to check
+     * @return true if the POI is marked as deleted
+     */
+    public boolean isDeleted(Poi poi) {
+        return deletedIds.contains(poi.id());
     }
 
     /**
@@ -264,7 +305,12 @@ public final class PoiManagerModel {
      */
     public void loadFromCsv(Path path) throws IOException {
         List<Poi> loadedPois = csvRepository.read(path);
-        replaceContents(loadedPois);
+        try {
+            replaceContents(loadedPois);
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new IOException("Could not load POIs from " + path.toAbsolutePath()
+                    + ": " + exception.getMessage(), exception);
+        }
         deletedIds.clear();
     }
 
@@ -348,22 +394,19 @@ public final class PoiManagerModel {
      * @throws IllegalArgumentException if duplicate IDs are present
      * @throws IllegalStateException if the selected tree rejects a record
      */
-    private void replaceContents(Collection<Poi> replacements) {
-        Map<String, Poi> unique = new LinkedHashMap<>();
+    private void replaceContents(List<Poi> replacements) {
+        Set<String> ids = new HashSet<>();
+        SpatialTree<Poi, Point<Double>> replacementTree = createTree(structure);
         for (Poi poi : replacements) {
-            if (unique.putIfAbsent(poi.id(), poi) != null) {
+            if (!ids.add(poi.id())) {
                 throw new IllegalArgumentException("Duplicate POI ID: " + poi.id());
             }
-        }
-
-        SpatialTree<Poi, Point<Double>> replacementTree = createTree();
-        for (Poi poi : unique.values()) {
             if (!replacementTree.insert(poi)) {
                 throw new IllegalStateException("The spatial tree rejected POI with ID " + poi.id() + ".");
             }
         }
         tree = replacementTree;
-        pois = new ArrayList<>(unique.values());
+        pois = replacements;
     }
 
     /**
@@ -390,8 +433,8 @@ public final class PoiManagerModel {
      *
      * @return an empty spatial tree for POIs
      */
-    private SpatialTree<Poi, Point<Double>> createTree() {
-        return switch (structure) {
+    private SpatialTree<Poi, Point<Double>> createTree(SpatialStructures selectedStructure) {
+        return switch (selectedStructure) {
             case KD_TREE -> new KDTree2DAdapter<>(
                     new KDTree<>(
                             poi -> new KDPoint<>(List.of(poi.latitude(), poi.longitude())),
