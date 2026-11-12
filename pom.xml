@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>sk.fri</groupId>
-    <artifactId>sp_aus2_v3</artifactId>
+    <artifactId>sp1_aus2</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -47,11 +47,6 @@
             <artifactId>jts-core</artifactId>
             <version>1.20.0</version>
         </dependency>
-        <!--<dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot</artifactId>
-            <version>4.0.6</version>
-        </dependency>-->
     </dependencies>
 
     <build>
@@ -61,7 +56,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>sk.fri.MainApplication</mainClass>
+                    <mainClass>sk.fri.poi.view.PoiManagerFxLauncher</mainClass>
                 </configuration>
             </plugin>
             <plugin>

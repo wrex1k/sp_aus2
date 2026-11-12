@@ -79,83 +79,80 @@ trieda \texttt{MainApplication}.
 \section{Architektúra a tok údajov}
 
 POI Manager tvorí používateľské rozhranie, riadiaca vrstva a model
-(obrázok \ref{fig:architecture}). \texttt{PoiManagerController}
-sprostredkúva požiadavky medzi rozhraním a \texttt{PoiManagerModel}.
+(obrázok \ref{fig:architecture}). \texttt{PoiManager\allowbreak Controller}
+sprostredkúva požiadavky medzi rozhraním a \texttt{PoiManager\allowbreak Model}.
 Model uchováva POI v zozname, na vyhľadávanie používa zvolený strom
-a prácu so súbormi CSV zabezpečuje cez \texttt{PoiCsvRepository}.
+a prácu so súbormi CSV zabezpečuje cez \texttt{Poi\allowbreak Csv\allowbreak Repository}.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  box/.style={draw=diagramblue, rounded corners=3pt, align=center,
-    text width=4.5cm, minimum height=0.95cm, inner sep=4pt,
-    fill=diagramlight, font=\small},
-  edge/.style={-{Latex[length=2mm]}, draw=diagramblue, thick}
+    box/.style={
+        draw=diagramblue,
+        rounded corners=3pt,
+        align=center,
+        text width=4.6cm,
+        minimum height=1cm,
+        inner sep=4pt,
+        fill=diagramlight,
+        font=\footnotesize
+    },
+    small/.style={box, text width=3.6cm},
+    edge/.style={-{Latex[length=2mm]}, draw=diagramblue, thick}
 ]
-\node[box] (view) at (0,0) {Rozhranie JavaFX\\{\scriptsize \texttt{sk.fri.poi.view}}};
-\node[box] (controller) at (0,-1.7) {Controller\\{\scriptsize \texttt{sk.fri.poi.controller}}};
-\node[box] (model) at (0,-3.4) {Model\\{\scriptsize \texttt{sk.fri.poi.model}}};
-\node[box, fill=diagramgreen] (tree) at (-3.4,-5.2)
-  {Priestorové stromy\\{\scriptsize \texttt{sk.fri.structures}}};
-\node[box, fill=diagramorange] (csv) at (3.4,-5.2)
-  {CSV úložisko\\{\scriptsize \texttt{PoiCsvRepository}}};
+
+% Hlavný tok
+\node[box] (view) at (0,0) {
+    \textbf{\texttt{PoiManagerFxApplication}}\\
+    {\scriptsize tabuľka, mapa, ovládacie prvky}
+};
+\node[box] (controller) at (0,-1.7) {
+    \textbf{\texttt{PoiManagerController}}\\
+    {\scriptsize sprostredkuje požiadavky}
+};
+\node[box] (model) at (0,-3.4) {
+    \textbf{\texttt{PoiManagerModel}}\\
+    {\scriptsize pois, tree, csvRepository}
+};
+
+% Pomocné triedy
+\node[small, fill=diagramgreen] (poi) at (-4.6,-5.9) {
+    \textbf{\texttt{Poi}}\\
+    {\scriptsize údaje o bode záujmu}
+};
+\node[small, fill=diagramgreen] (tree) at (0,-5.9) {
+    \textbf{\texttt{SpatialTree}}\\
+    {\scriptsize priestorový index POI}
+};
+\node[small, fill=diagramorange] (csv) at (4.6,-5.9) {
+    \textbf{\texttt{PoiCsvRepository}}\\
+    {\scriptsize načítanie a zápis CSV}
+};
+
+% Hrany
 \draw[edge] (view) -- (controller);
 \draw[edge] (controller) -- (model);
-\draw[edge] (model) -- (tree);
-\draw[edge] (model) -- (csv);
+\draw[edge] (model.south) -- (tree.north);
+\draw[edge] (model.south) -- ++(0,-0.65) -| (poi.north);
+\draw[edge] (model.south) -- ++(0,-0.65) -| (csv.north);
+
+% Popisky hrán
+\node[font=\scriptsize, above] at (-2.3,-4.55) {obsahuje 0..*};
+\node[font=\scriptsize, above] at (2.3,-4.55) {používa};
+\node[font=\scriptsize, right] at (0,-5.0) {používa};
 \end{tikzpicture}
-\caption{Hlavné časti POI Managera a ich prepojenie}
+\caption{UML diagram hlavných tried POI Managera}
 \label{fig:architecture}
 \end{figure}
 
 Grafické rozhranie vytvára \texttt{PoiManagerFxApplication}. Akcie
 v \texttt{PoiControlsView} a udalosti v tabuľke či na mape spúšťajú
-obslužné funkcie tejto triedy. Tie odovzdajú požiadavku controlleru,
-ktorý zavolá príslušnú operáciu modelu. Výsledky sa následne zobrazia
+obslužné funkcie tejto triedy. Tie odovzdajú požiadavku triede
+\texttt{PoiManager\allowbreak Controller}, ktorá zavolá príslušnú
+operáciu modelu. Výsledky sa následne zobrazia
 v \texttt{PoiTableView} a \texttt{PoiMapView}. Model nepracuje priamo
 s JavaFX; používateľské rozhranie tak možno meniť bez zásahu do
 priestorového vyhľadávania a práce s údajmi.
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[
-  class/.style={draw, rounded corners=2pt, align=center, text width=3.5cm,
-    minimum height=1.1cm, inner sep=5pt, font=\small},
-  relation/.style={-{Latex[length=2mm]}, draw, thick}
-]
-\node[class] (app) at (-4.2,0) {
-  \textbf{\texttt{PoiManagerFxApplication}}\\
-  \texttt{table, map, controls}
-};
-\node[class] (controller) at (0,0) {
-  \textbf{\texttt{PoiManagerController}}\\
-  \texttt{model}
-};
-\node[class] (model) at (4.2,0) {
-  \textbf{\texttt{PoiManagerModel}}\\
-  \texttt{pois, tree, csvRepository}
-};
-\node[class] (poi) at (0,-2.4) {
-  \textbf{\texttt{Poi}}\\
-  Údaje o bode záujmu
-};
-\node[class] (tree) at (4.2,-2.4) {
-  \textbf{\texttt{SpatialTree}}\\
-  Priestorový index POI
-};
-\node[class] (csv) at (4.2,-4.6) {
-  \textbf{\texttt{PoiCsvRepository}}\\
-  Načítanie a zápis CSV
-};
-\draw[relation] (app) -- node[above] {\scriptsize volá} (controller);
-\draw[relation] (controller) -- node[above] {\scriptsize deleguje} (model);
-\draw[relation] (model) -- node[left] {\scriptsize 0..*} (poi);
-\draw[relation] (model) -- (tree);
-\draw[relation] (model) -- (csv);
-\end{tikzpicture}
-\caption{Zjednodušený UML diagram hlavných tried POI Managera}
-\label{fig:class-diagram}
-\end{figure}
 
 Balík \texttt{sk.fri.tester} obsahuje nástroj na overenie a porovnanie
 stromov, \texttt{sk.fri.adapters} obsahuje adaptéry externých stromov.
@@ -413,8 +410,8 @@ a vyhľadávanie v oblasti. Výsledkom je medián časov v milisekundách.
 Každý beh vytvára nový strom, počet hľadaní sa môže líšiť podľa počtu
 úspešne vložených bodov.
 
-Benchmark vykoná dva zahrievacie a päť meraných behov. Aktuálny nástroj
-používa až 1\,000 oblastí na beh.
+Benchmark vykoná dva zahrievacie a päť meraných behov. Nástroj umožňuje
+použiť až 1\,000 oblastí na beh, v uvedenom meraní bolo použitých 100.
 
 \section{Výsledky testov}
 Tabuľka uvádza mediány piatich behov s 10\,000 vloženiami,
@@ -486,18 +483,20 @@ spustite:
 \begin{verbatim}
 mvn javafx:run
 \end{verbatim}
+K dispozícii je aj spustiteľná verzia aplikácie pre Windows vo formáte
+\texttt{.exe}.
 Po spustení vyberte v úvodnom dialógu KD Tree, Quad Tree alebo Quad KD
 Tree. V nasledujúcom kroku zvoľte \enquote{New file} a určte nový CSV
-súbor, alebo vyberte \enquote{Open file} a načítajte existujúcu
-evidenciu. Zvolený strom zostane aktívny počas celého behu aplikácie,
+súbor, alebo vyberte \enquote{Open file} a načítajte existujúci CSV
+súbor s bodmi záujmu. Zvolený strom zostane aktívny počas celého behu aplikácie,
 zmeniť ho možno až po jej opätovnom spustení.
 
-Projekt obsahuje aj terminálové rozhranie \texttt{ConsoleView},
-jeho spustenie je v \texttt{MainApplication} zakomentované.
+Projekt obsahuje aj terminálové rozhranie \texttt{Console\allowbreak View},
+jeho spustenie je v \texttt{Main\allowbreak Application} zakomentované.
 
 \section{Každodenná práca}
 \begin{enumerate}[leftmargin=1.5em]
-\item Na presné hľadanie zvoľte \enquote{Find by GPS} a zadajte súradnice v desatinných stupňoch.
+\item Na hľadanie podľa polohy zvoľte \enquote{Find by GPS} a zadajte súradnice v desatinných stupňoch.
 \item Na vyhľadanie okolia kliknite na riadok POI v tabuľke, použite \enquote{Find nearby} a zadajte polomer v metroch. Stredom je poloha vybraného záznamu.
 \item Na hľadanie podľa názvu použite \enquote{Search by name} a zadajte text aj hranice oblasti.
 \item Na vytvorenie POI použite \enquote{Add POI}, prípadne kliknite do mapy vnútri hranice Slovenska. Na úpravu zaškrtnite práve jeden aktívny záznam a zvoľte \enquote{Edit selected}.

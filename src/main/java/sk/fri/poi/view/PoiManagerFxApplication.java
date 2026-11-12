@@ -56,7 +56,11 @@ public final class PoiManagerFxApplication extends Application {
     private Supplier<List<Poi>> currentQuery;
     private boolean allResults;
 
-    /** Selects a spatial structure and CSV file before opening the main window. */
+    /**
+     * Selects a spatial structure and CSV file before opening the main window.
+     *
+     * @param stage primary application window
+     */
     @Override
     public void start(Stage stage) {
         this.stage = stage;
@@ -92,7 +96,12 @@ public final class PoiManagerFxApplication extends Application {
         stage.show();
     }
 
-    /** Asks which spatial structure to use before selecting the data file. */
+    /**
+     * Asks which spatial structure to use before selecting the data file.
+     *
+     * @param owner window that owns the selection dialog
+     * @return the selected structure, or empty if the dialog was cancelled
+     */
     private Optional<SpatialStructures> chooseSpatialStructure(Stage owner) {
         ChoiceDialog<String> dialog = new ChoiceDialog<>(
                 "KD Tree",
@@ -112,7 +121,12 @@ public final class PoiManagerFxApplication extends Application {
         });
     }
 
-    /** Presents the two startup actions and opens the corresponding file chooser. */
+    /**
+     * Presents the two startup actions and opens the corresponding file chooser.
+     *
+     * @param owner window that owns the dialogs
+     * @return the selected CSV path and whether it should be created, or empty if cancelled
+     */
     private Optional<CsvSelection> chooseCsvFile(Stage owner) {
         ButtonType create = new ButtonType("New file", ButtonBar.ButtonData.YES);
         ButtonType open = new ButtonType("Open file", ButtonBar.ButtonData.NO);
@@ -142,7 +156,9 @@ public final class PoiManagerFxApplication extends Application {
         return Optional.of(new CsvSelection(selectedFile.toPath(), choice.get() == create));
     }
 
-    /** Creates the table, map and operation controls. */
+    /**
+     * Creates the table, map and operation controls.
+     */
     private void createLayout() {
         table = new PoiTableView(poi -> controller.isDeleted(poi));
         map = new PoiMapView(poi -> controller.isDeleted(poi), poi -> {
@@ -175,7 +191,11 @@ public final class PoiManagerFxApplication extends Application {
         stage.getScene().setRoot(root);
     }
 
-    /** Adds file actions to the menu bar. */
+    /**
+     * Adds file actions to the menu bar.
+     *
+     * @return the menu bar containing file actions
+     */
     private MenuBar createMenuBar() {
         Menu file = new Menu("File");
         MenuItem openExisting = new MenuItem("Open file");
@@ -186,7 +206,9 @@ public final class PoiManagerFxApplication extends Application {
         return new MenuBar(file);
     }
 
-    /** Opens and loads an existing CSV without discarding the current data on failure. */
+    /**
+     * Opens and loads an existing CSV without discarding the current data on failure.
+     */
     private void openExistingFile() {
         FileChooser chooser = csvFileChooser("Open CSV file");
         File selected = chooser.showOpenDialog(stage);
@@ -203,7 +225,9 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
-    /** Creates a new empty CSV and makes it the active file. */
+    /**
+     * Creates a new empty CSV and makes it the active file.
+     */
     private void createNewFile() {
         FileChooser chooser = csvFileChooser("Create CSV file");
         chooser.setInitialFileName("poi.csv");
@@ -225,7 +249,12 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
-    /** Creates a file chooser configured for CSV files. */
+    /**
+     * Creates a file chooser configured for CSV files.
+     *
+     * @param title title displayed by the file chooser
+     * @return a CSV file chooser
+     */
     private FileChooser csvFileChooser(String title) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(title);
@@ -237,7 +266,13 @@ public final class PoiManagerFxApplication extends Application {
         return chooser;
     }
 
-    /** Confirms a file switch when the current data might be discarded. */
+    /**
+     * Confirms a file switch when the current data might be discarded.
+     *
+     * @param selectedPath path selected for the new active file
+     * @param creating true when creating a new file, false when opening one
+     * @return true if the file switch is allowed
+     */
     private boolean confirmFileSwitch(Path selectedPath, boolean creating) {
         if (!creating && csvPath != null
                 && csvPath.toAbsolutePath().normalize().equals(selectedPath.toAbsolutePath().normalize())) {
@@ -252,7 +287,11 @@ public final class PoiManagerFxApplication extends Application {
         return confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
-    /** Resets selection and displays the default fraction after switching files. */
+    /**
+     * Resets selection and displays the default fraction after switching files.
+     *
+     * @param message status message to display after the switch
+     */
     private void resetResultsAfterFileSwitch(String message) {
         table.checkedIds().clear();
         currentQuery = controller::getAllPoisIncludingDeleted;
@@ -262,7 +301,12 @@ public final class PoiManagerFxApplication extends Application {
         setStatus(message);
     }
 
-    /** Formats an exception and its causes for an error dialog. */
+    /**
+     * Formats an exception and its causes for an error dialog.
+     *
+     * @param exception exception to format
+     * @return formatted exception and cause details
+     */
     private String exceptionDetails(Throwable exception) {
         StringBuilder details = new StringBuilder();
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
@@ -277,11 +321,18 @@ public final class PoiManagerFxApplication extends Application {
         return details.toString();
     }
 
-    /** Holds a selected CSV path and whether it should be created. */
+    /**
+     * Holds a selected CSV path and whether it should be created.
+     *
+     * @param path selected CSV file path
+     * @param createNew true when a new file should be created, false when an existing file is opened
+     */
     private record CsvSelection(Path path, boolean createNew) {
     }
 
-    /** Opens a single non-modal GPS search dialog. */
+    /**
+     * Opens a single non-modal GPS search dialog.
+     */
     private void findAt() {
         if (gpsDialog != null && gpsDialog.isShowing()) {
             gpsDialog.getDialogPane().getScene().getWindow().requestFocus();
@@ -302,7 +353,9 @@ public final class PoiManagerFxApplication extends Application {
         dialog.show();
     }
 
-    /** Searches around the selected POI to find candidates for editing and deletion. */
+    /**
+     * Searches around the selected POI to find candidates for editing and deletion.
+     */
     private void findNearby() {
         Poi center = table.getSelectionModel().getSelectedItem();
         if (center == null) {
@@ -320,12 +373,19 @@ public final class PoiManagerFxApplication extends Application {
         dialog.showAndWait();
     }
 
-    /** Opens a form to create a POI. */
+    /**
+     * Opens a form to create a POI.
+     */
     private void createPoi() {
         createPoiAt(null, null);
     }
 
-    /** Opens the existing creation form with coordinates from a map click. */
+    /**
+     * Opens the existing creation form with coordinates from a map click.
+     *
+     * @param initialLatitude latitude selected on the map, or null if not set
+     * @param initialLongitude longitude selected on the map, or null if not set
+     */
     private void createPoiAt(Double initialLatitude, Double initialLongitude) {
         Dialog<ButtonType> dialog = createFormDialog("Create POI", "Create");
         GridPane form = createFormGrid();
@@ -347,7 +407,9 @@ public final class PoiManagerFxApplication extends Application {
         dialog.showAndWait();
     }
 
-    /** Opens a form for the single checked active POI. */
+    /**
+     * Opens a form for the single checked active POI.
+     */
     private void editPoi() {
         List<Poi> checked = table.getCheckedPois();
         if (checked.size() != 1) {
@@ -377,7 +439,9 @@ public final class PoiManagerFxApplication extends Application {
         dialog.showAndWait();
     }
 
-    /** Searches names within an inclusive geographic area. */
+    /**
+     * Searches names within an inclusive geographic area.
+     */
     private void searchByName() {
         Dialog<ButtonType> dialog = createFormDialog("Search names in an area", "Search");
         GridPane form = createFormGrid();
@@ -404,7 +468,9 @@ public final class PoiManagerFxApplication extends Application {
         dialog.showAndWait();
     }
 
-    /** Confirms deletion of the checked active POIs. */
+    /**
+     * Confirms deletion of the checked active POIs.
+     */
     private void deletePoi() {
         List<Poi> checked = table.getCheckedPois();
         List<Poi> selected = checked.stream().filter(poi -> !controller.isDeleted(poi)).toList();
@@ -433,7 +499,9 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
-    /** Prompts for a positive number of test POIs. */
+    /**
+     * Prompts for a positive number of test POIs.
+     */
     private void generatePois() {
         Dialog<ButtonType> dialog = createFormDialog("Generate test POIs", "Generate");
         GridPane form = createFormGrid();
@@ -455,7 +523,9 @@ public final class PoiManagerFxApplication extends Application {
         dialog.showAndWait();
     }
 
-    /** Saves active records to the CSV file selected at startup. */
+    /**
+     * Saves active records to the CSV file selected at startup.
+     */
     private void savePois() {
         try {
             controller.saveToCsv(csvPath);
@@ -465,7 +535,12 @@ public final class PoiManagerFxApplication extends Application {
         }
     }
 
-    /** Shows the selected cumulative fraction of all records as the current filtering context. */
+    /**
+     * Shows the selected cumulative fraction of all records as the current filtering context.
+     *
+     * @param part selected fraction in tenths, from 1 through 10
+     * @throws IllegalArgumentException if the fraction is outside the range 1 through 10
+     */
     private void showAllPois(int part) {
         if (part < 1 || part > 10) {
             throw new IllegalArgumentException("POI list part must be between 1 and 10.");
@@ -481,7 +556,13 @@ public final class PoiManagerFxApplication extends Application {
         startQuery(query, true, message);
     }
 
-    /** Records a query and displays its current results. */
+    /**
+     * Records a query and displays its current results.
+     *
+     * @param query query that supplies the current result set
+     * @param all true when the query represents all stored records
+     * @param message status message associated with the query
+     */
     private void startQuery(Supplier<List<Poi>> query, boolean all, String message) {
         List<Poi> results = query.get();
         currentQuery = query;
@@ -492,7 +573,9 @@ public final class PoiManagerFxApplication extends Application {
         applyFilter();
     }
 
-    /** Re-runs the current query while retaining deleted records already in its results. */
+    /**
+     * Re-runs the current query while retaining deleted records already in its results.
+     */
     private void refreshResults() {
         List<Poi> updated = new ArrayList<>(currentQuery.get());
         if (!allResults) {
@@ -509,7 +592,9 @@ public final class PoiManagerFxApplication extends Application {
         applyFilter();
     }
 
-    /** Filters the current results without replacing or rerunning the search. */
+    /**
+     * Filters the current results without replacing or rerunning the search.
+     */
     private void applyFilter() {
         Poi selected = table.getSelectionModel().getSelectedItem();
         List<Poi> visible = currentResults.stream()
@@ -524,19 +609,31 @@ public final class PoiManagerFxApplication extends Application {
         setStatus(statusMessage);
     }
 
-    /** Synchronizes markers with visible rows, row focus, and checked records. */
+    /**
+     * Synchronizes markers with visible rows, row focus, and checked records.
+     */
     private void updateMap() {
         map.showPois(table.getItems(), table.getSelectionModel().getSelectedItem(), table.checkedIds());
     }
 
-    /** Updates the status bar with the current result count. */
+    /**
+     * Updates the status bar with the current result count.
+     *
+     * @param message status message to display
+     */
     private void setStatus(String message) {
         statusMessage = message;
         status.setText(message + " Results: " + table.getItems().size()
                 + "  Checked: " + table.getCheckedPois().size());
     }
 
-    /** Creates a dialog with submit and cancel buttons. */
+    /**
+     * Creates a dialog with submit and cancel buttons.
+     *
+     * @param title dialog title
+     * @param submitText text displayed on the submit button
+     * @return the configured form dialog
+     */
     private Dialog<ButtonType> createFormDialog(String title, String submitText) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.initOwner(stage);
@@ -546,7 +643,13 @@ public final class PoiManagerFxApplication extends Application {
         return dialog;
     }
 
-    /** Adds inline errors and keeps the dialog open until its operation succeeds. */
+    /**
+     * Adds inline errors and keeps the dialog open until its operation succeeds.
+     *
+     * @param dialog dialog to attach the form to
+     * @param form form content to display
+     * @param operation operation to run when the user submits the form
+     */
     private void attachForm(Dialog<ButtonType> dialog, GridPane form, Runnable operation) {
         Label error = new Label();
         error.setStyle("-fx-text-fill: firebrick;");
@@ -566,7 +669,11 @@ public final class PoiManagerFxApplication extends Application {
         });
     }
 
-    /** Creates a padded form grid. */
+    /**
+     * Creates a padded form grid.
+     *
+     * @return the configured form grid
+     */
     private GridPane createFormGrid() {
         GridPane form = new GridPane();
         form.setHgap(10);
@@ -575,21 +682,41 @@ public final class PoiManagerFxApplication extends Application {
         return form;
     }
 
-    /** Adds a labeled text field to a form. */
+    /**
+     * Adds a labeled text field to a form.
+     *
+     * @param form grid that receives the field
+     * @param row row in which to place the field
+     * @param label text displayed beside the field
+     * @param initial initial field value
+     * @return the created text field
+     */
     private TextField addField(GridPane form, int row, String label, String initial) {
         TextField field = new TextField(initial);
         form.addRow(row, new Label(label), field);
         return field;
     }
 
-    /** Validates a required POI name before invoking the controller. */
+    /**
+     * Validates a required POI name before invoking the controller.
+     *
+     * @param field field containing the POI name
+     * @throws IllegalArgumentException if the name is blank
+     */
     private void requireName(TextField field) {
         if (field.getText().isBlank()) {
             throw new IllegalArgumentException("Name is required.");
         }
     }
 
-    /** Parses a finite number from an input field. */
+    /**
+     * Parses a finite number from an input field.
+     *
+     * @param field field containing the number
+     * @param label field name used in validation messages
+     * @return the parsed finite number
+     * @throws IllegalArgumentException if the value is not a finite number
+     */
     private double parseDouble(TextField field, String label) {
         double value;
         try {
@@ -603,7 +730,16 @@ public final class PoiManagerFxApplication extends Application {
         return value;
     }
 
-    /** Parses and validates a geographic coordinate. */
+    /**
+     * Parses and validates a geographic coordinate.
+     *
+     * @param field field containing the coordinate
+     * @param label coordinate name used in validation messages
+     * @param minimum lowest permitted coordinate value
+     * @param maximum highest permitted coordinate value
+     * @return the parsed coordinate
+     * @throws IllegalArgumentException if the value is not a finite number within the permitted range
+     */
     private double coordinate(TextField field, String label, double minimum, double maximum) {
         double value = parseDouble(field, label);
         if (value < minimum || value > maximum) {
@@ -612,7 +748,14 @@ public final class PoiManagerFxApplication extends Application {
         return value;
     }
 
-    /** Parses a strictly positive finite number. */
+    /**
+     * Parses a strictly positive finite number.
+     *
+     * @param field field containing the number
+     * @param label field name used in validation messages
+     * @return the parsed positive number
+     * @throws IllegalArgumentException if the value is not finite or is not greater than zero
+     */
     private double positiveDouble(TextField field, String label) {
         double value = parseDouble(field, label);
         if (value <= 0) {
@@ -621,7 +764,12 @@ public final class PoiManagerFxApplication extends Application {
         return value;
     }
 
-    /** Displays an error alert. */
+    /**
+     * Displays an error alert.
+     *
+     * @param title alert title
+     * @param message error details to display
+     */
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.initOwner(stage);

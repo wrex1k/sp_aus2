@@ -1,9 +1,5 @@
 package sk.fri.tester;
 
-/*import org.springframework.boot.ansi.AnsiColor;
-import org.springframework.boot.ansi.AnsiOutput;
-import org.springframework.boot.ansi.AnsiStyle;*/
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,11 +12,8 @@ import java.util.List;
  * Utility class for loading test points and areas from CSV files.
  */
 public class LoadCSV {
-    /**
-     * Maximum number of points to load from the CSV file.
-     */
-    public static final int MAX_POINTS = 10_000;
-    /** Maximum number of test areas to load from the CSV resource. */
+
+    public static final int MAX_POINTS = 100_000;
     public static final int MAX_AREAS = 1000;
 
     private static final String CSV_PATH = "/csv/slovakia_nodes.csv";
