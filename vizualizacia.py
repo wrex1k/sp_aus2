@@ -1,7 +1,7 @@
 ﻿"""
 Interaktívna vizualizácia KDTree, QuadTree a QuadKDTree z sk.fri.structures.
 Pôvodný QuadTree je dostupný samostatne ako "QuadTree (stará – nie podľa zadania)".
-QuadKDTree zatiaľ delí podľa vloženého bodu, rovnako ako jeho Java implementácia.
+QuadKDTree delí oblasť v strede, rovnako ako jeho Java implementácia.
 
 Spustenie:  python vizualizacia.py      (iba štandardný tkinter, nič sa neinštaluje)
 
@@ -443,18 +443,21 @@ class QuadTree:
 
 # ---------------------------------------------------------------- QuadKDTree
 class QuadKDNode:
-    def __init__(self, value):
-        self.point = value[1]
+    def __init__(self, mn, mx):
+        self.min = mn
+        self.max = mx
+        self.point = ((mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2)
         self.data = KDTree()
-        self.data.insert(value)
-        self.values = [value]
-        self.distinct = 1
-        self.children = [None] * 4
+        self.values = []
+        self.distinct = 0
+        self.children = None
 
     def is_leaf(self):
         return self.data is not None
 
     def kids(self):
+        if self.children is None:
+            return []
         return [(str(i), c) for i, c in enumerate(self.children) if c]
 
     def label(self):
@@ -476,21 +479,25 @@ class QuadKDTree:
         p = value[1]
         self.path = []
         self.last_split = []
+        if not contains((0, 0), (DOMAIN, DOMAIN), p):
+            self.log(f"  bod {p} je mimo koreňovej oblasti -> vloženie odmietnuté")
+            return False
         if self.root is None:
-            self.root = QuadKDNode(value)
-            self.path.append(self.root)
+            self.root = QuadKDNode((0, 0), (DOMAIN, DOMAIN))
             self.log("  strom je prázdny -> vznikne koreň (list s vlastným KD stromom)")
-            return True
         cur, depth = self.root, 0
         while True:
             self.path.append(cur)
             if cur.is_leaf():
                 exists = cur.data.find(p) is not None
                 self.log(f"  LIST {cur.point}, hĺbka {depth}/{CFG['max_depth']}, rôznych bodov {cur.distinct}/{CFG['cap']}, bod už existuje: {exists}")
-                if exists or cur.distinct < CFG["cap"] or depth >= CFG["max_depth"]:
+                can_split = (cur.min[0] < cur.point[0] < cur.max[0]
+                             and cur.min[1] < cur.point[1] < cur.max[1])
+                if exists or cur.distinct < CFG["cap"] or depth >= CFG["max_depth"] or not can_split:
                     why = ("bod už existuje" if exists else
                            "list ešte nie je plný" if cur.distinct < CFG["cap"] else
-                           "MAX_DEPTH dosiahnutý, list už nerastie do hĺbky")
+                           "MAX_DEPTH dosiahnutý" if depth >= CFG["max_depth"] else
+                           "oblasť sa už nedá rozdeliť")
                     cur.data.insert(value)
                     cur.values.append(value)
                     if not exists:
@@ -502,25 +509,26 @@ class QuadKDTree:
             else:
                 self.log(f"  vnútorný uzol {cur.point}, hĺbka {depth}")
             q = quadrant(p, cur.point, self.log)
-            child = cur.children[q]
-            if child is None:
-                cur.children[q] = QuadKDNode(value)
-                self.log(f"    kvadrant {q} je prázdny -> nový list s týmto bodom")
-                return True
-            self.log(f"    kvadrant {q} existuje -> pokračujem do neho")
-            cur = child
+            self.log(f"    pokračujem do kvadrantu {q}")
+            cur = cur.children[q]
             depth += 1
 
     def split(self, node):
         self.last_split.append(node)
-        self.log(f"    SPLIT: stred = {node.point} (bod, ktorý list vytvoril); presúvam {len(node.values)} hodnôt:")
+        self.log(f"    SPLIT: stred oblasti = {node.point}; presúvam {len(node.values)} hodnôt:")
+        x0, y0 = node.min
+        x1, y1 = node.max
+        cx, cy = node.point
+        node.children = [
+            QuadKDNode((x0, y0), (cx, cy)),
+            QuadKDNode((cx, y0), (x1, cy)),
+            QuadKDNode((x0, cy), (cx, y1)),
+            QuadKDNode((cx, cy), (x1, y1)),
+        ]
         for v in node.values:
             q = quadrant(v[1], node.point)
             self.log(f"      hodnota #{v[0]} {v[1]} -> kvadrant {q}")
             ch = node.children[q]
-            if ch is None:
-                node.children[q] = QuadKDNode(v)
-                continue
             exists = ch.data.find(v[1]) is not None
             ch.data.insert(v)
             ch.values.append(v)
@@ -563,9 +571,6 @@ class QuadKDTree:
             self.log(f"  vnútorný uzol {node.point}")
             for q in range(4):
                 ch = node.children[q]
-                if ch is None:
-                    self.log(f"    kvadrant {q}: nemá potomka (nič na preskúmanie)")
-                    continue
                 self.log("    " + explain_quadrant(node.point, q, mn, mx))
                 if intersects_quadrant(node.point, q, mn, mx):
                     stack.append(ch)
@@ -599,7 +604,6 @@ class QuadKDTree:
             cx, cy = n.point
             d.line(cx, y0, cx, y1, "#222", 2)
             d.line(x0, cy, x1, cy, "#222", 2)
-            d.marker(cx, cy)
             for q in range(4):
                 rec(n.children[q],
                     cx if q & 1 else x0, cy if q & 2 else y0,
@@ -835,9 +839,9 @@ class App:
 
         path_pts = set()
         for node in self.tree.path:
-            if isinstance(node, QuadNode):
+            if isinstance(node, QuadNode) or (isinstance(node, QuadKDNode) and node.is_leaf()):
                 path_pts.update(value[1] for value in node.values)
-            else:
+            elif not isinstance(node, QuadKDNode):
                 path_pts.add(node.point)
         match_pts = {v[1] for v in self.matches}
         counts = {}

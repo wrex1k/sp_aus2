@@ -298,16 +298,19 @@ vo vnútri oboch rozmerov oblasti, ďalšie body zostávajú v liste.
 
 \section{QuadKDTree}
 \texttt{QuadKDTree<T,K>} kombinuje kvadrantové delenie s KDTree.
-Vonkajšia časť rozdeľuje priestor na kvadranty, zatiaľ čo body v každom
-liste sú uložené v samostatnom KDTree. Hodnoty s rovnakými súradnicami
-sa ukladajú spolu v uzle tohto KDTree.
+Vonkajšia časť rozdeľuje ohraničenú oblasť v jej strede na kvadranty,
+zatiaľ čo body v každom liste sú uložené v samostatnom KDTree. Hodnoty
+s rovnakými súradnicami sa ukladajú spolu v uzle tohto KDTree. Pre POI
+má koreň rovnaké hranice ako QuadTree a body mimo nich sa odmietajú.
 
 List sa začne deliť pri vkladaní nového bodu, keď už obsahuje 32 bodov
-s rôznymi súradnicami a ešte nedosiahol limit hĺbky. Jeho hodnoty sa
-podľa polohy rozdelia do nových listov, ako ukazuje obrázok
+s rôznymi súradnicami a ešte nedosiahol limit hĺbky. Vzniknú štyri
+listy, ktoré môžu byť aj prázdne. Jeho hodnoty sa podľa polohy
+rozdelia do nových listov, ako ukazuje obrázok
 \ref{fig:quadkd-split}. Kvadrantové delenie má maximálnu hĺbku 32.
 Po dosiahnutí tohto limitu sa ďalšie body pridávajú do KDTree v liste,
-ktorý sa už ďalej nedelí.
+ktorý sa už ďalej nedelí. Rovnako sa list ďalej nedelí, ak sa jeho
+oblasť kvôli presnosti súradníc nedá rozdeliť v oboch rozmeroch.
 
 \begin{figure}[H]
 \centering
@@ -352,7 +355,7 @@ a uložených hodnôt.
 \toprule
 \textbf{Vlastnosť} & \textbf{KDTree} & \textbf{QuadTree} & \textbf{QuadKDTree}\\
 \midrule
-Rozdelenie priestoru & Striedanie súradnicových dimenzií & Kvadranty podľa stredu bunky & Kvadranty, KDTree v listoch\\
+Rozdelenie priestoru & Striedanie súradnicových dimenzií & Kvadranty podľa stredu bunky & Kvadranty podľa stredu bunky, KDTree v listoch\\
 Dimenzie & \(k\) & 2 & 2\\
 Duplicitné body & Zoznam hodnôt v uzle & Zoznam hodnôt v uzle & Zoznam hodnôt v uzle KDTree\\
 Vyhľadávanie v oblasti & Výber vetiev podľa deliacej súradnice & Výber kvadrantov podľa oblasti & Výber kvadrantov a vyhľadávanie v KDTree listov\\
@@ -413,7 +416,7 @@ načíta trieda \texttt{LoadCSV} najviac 100\,000 bodov a 1\,000 oblastí.
 Všetkých deväť konfigurácií prešlo kontrolami vyhľadávania.
 Pri kontrole vkladania a hľadania polohy sa vyberalo
 1\,000 bodov s opakovaním, pri hľadaní v oblasti sa použilo 10\,000
-bodov a 100 oblastí. Vlastný QuadTree prijal všetkých 10\,000 bodov.
+bodov a 1\,000 oblastí. Všetky stromy prijali všetkých 10\,000 bodov.
 
 \section{Metodika benchmarku a obmedzenia}
 \texttt{TreeBenchmark} meria vkladanie, hľadanie vložených bodov
@@ -427,6 +430,7 @@ použiť až 1\,000 oblastí na beh, v uvedenom meraní bolo použitých 100.
 \section{Výsledky testov}
 Tabuľka uvádza mediány piatich behov s 10\,000 vloženiami,
 10\,000 hľadaniami bodov a 100 dopytmi na oblasť na beh.
+Stĺpec Spolu je súčtom mediánov jednotlivých operácií.
 
 \begin{table}[H]
 \centering
@@ -436,15 +440,15 @@ Tabuľka uvádza mediány piatich behov s 10\,000 vloženiami,
 \textbf{Implementácia} & \textbf{Vkladanie} & \textbf{Hľadanie} &
 \textbf{Oblasť} & \textbf{Spolu}\\
 \midrule
-My KDTree & 13,286 & 7,838 & 1,223 & 22,347\\
-My QuadTree & 12,656 & 5,461 & 0,680 & 18,797\\
-My Quad-KDTree & 20,988 & 8,702 & 1,126 & 30,816\\
-Existing external KDTree & 4,327 & 5,221 & 5,011 & 14,558\\
-TinSpin KDTree & 3,012 & 18,303 & 0,450 & 21,765\\
-JTS KDTree & 7,162 & 0,685 & 0,830 & 8,678\\
-Varun Pant QuadTree & 2,562 & 1,878 & 0,316 & 4,756\\
-Alwex QuadTree & 7,479 & 71,417 & 1,057 & 79,953\\
-Ryan Pelletier QuadTree & 1,980 & 441,413 & 4,824 & 448,216\\
+My KDTree & 19,256 & 8,273 & 1,133 & 28,661\\
+My QuadTree & 17,242 & 7,975 & 1,434 & 26,650\\
+My Quad-KDTree & 15,299 & 3,815 & 0,523 & 19,637\\
+Existing external KDTree & 6,048 & 7,375 & 4,969 & 18,392\\
+TinSpin KDTree & 4,745 & 26,813 & 0,519 & 32,077\\
+JTS KDTree & 13,695 & 1,144 & 1,276 & 16,115\\
+Varun Pant QuadTree & 5,324 & 2,642 & 0,398 & 8,364\\
+Alwex QuadTree & 11,416 & 89,321 & 1,684 & 102,421\\
+Ryan Pelletier QuadTree & 2,232 & 457,853 & 4,655 & 464,740\\
 \bottomrule
 \end{tabularx}
 \caption{Výsledky benchmarku v milisekundách}
@@ -452,8 +456,8 @@ Ryan Pelletier QuadTree & 1,980 & 441,413 & 4,824 & 448,216\\
 \end{table}
 
 Najnižší celkový čas v uvedenom meraní má Varun Pant Quadtree
-(4,756 ms). Spomedzi vlastných štruktúr dosiahol najnižší celkový čas
-QuadTree (18,797 ms).
+(8,364 ms). Spomedzi vlastných štruktúr dosiahol najnižší celkový čas
+QuadKDTree (19,637 ms).
 
 \chapter{Aplikácia POI Manager}
 \label{chap:poi}
