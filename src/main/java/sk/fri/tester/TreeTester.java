@@ -21,7 +21,7 @@ public class TreeTester {
     static List<SpatialTree<CsvPoint, Point<Double>>> get2DTrees() {
         return List.of(
                 new KDTree2DAdapter<>(new KDTree<>(CsvPoint::toKDPoint, Double::compare, 2)), //kdtree using 2d (kdpoint) (k=2)
-                new QuadTree<>(CsvPoint::toPoint, Double::compare),
+                new QuadTree<>(CsvPoint::toPoint, Double::compare, new Point<>(-90.0, -180.0), new Point<>(90.0, 180.0),(min, max) -> (min + max) / 2.0),
                 new QuadKDTree<>(CsvPoint::toPoint, CsvPoint::toKDPoint, Double::compare), //quadtree using 2d (point) and 2d (kdpoint) (k=2)
 
                 new KDAdapter<>(CsvPoint::toPoint, Double::doubleValue),

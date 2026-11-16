@@ -454,7 +454,10 @@ public final class PoiManagerModel {
             );
             case QUAD_TREE -> new QuadTree<>(
                     poi -> new Point<>(poi.latitude(), poi.longitude()),
-                    Double::compare
+                    Double::compare,
+                    new Point<>(-90.0, -180.0),
+                    new Point<>(90.0, 180.0),
+                    (min, max) -> (min + max) / 2.0
             );
             case QUAD_KD_TREE -> new QuadKDTree<>(
                     poi -> new Point<>(poi.latitude(), poi.longitude()),

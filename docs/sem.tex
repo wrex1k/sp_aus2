@@ -73,8 +73,8 @@ Jeho základom sú tri vlastné priestorové stromy: KDTree, QuadTree
 a QuadKDTree. Na porovnanie je pripojených šesť externých implementácií.
 Súčasťou projektu je testovací nástroj a aplikácia POI Manager na
 správu bodov záujmu. Aplikácia má grafické rozhranie JavaFX a obsahuje
-aj terminálové rozhranie \texttt{ConsoleView}. Vstupným bodom je
-trieda \texttt{MainApplication}.
+aj terminálové rozhranie \texttt{ConsoleView}. Grafickú aplikáciu
+spúšťa \texttt{PoiManagerFxLauncher}, konzolovú \texttt{MainApplication}.
 
 \section{Architektúra a tok údajov}
 
@@ -151,7 +151,7 @@ obslužné funkcie tejto triedy. Tie odovzdajú požiadavku triede
 \texttt{PoiManager\allowbreak Controller}, ktorá zavolá príslušnú
 operáciu modelu. Výsledky sa následne zobrazia
 v \texttt{PoiTableView} a \texttt{PoiMapView}. Model nepracuje priamo
-s JavaFX; používateľské rozhranie tak možno meniť bez zásahu do
+s JavaFX, používateľské rozhranie tak možno meniť bez zásahu do
 priestorového vyhľadávania a práce s údajmi.
 
 Balík \texttt{sk.fri.tester} obsahuje nástroj na overenie a porovnanie
@@ -180,11 +180,11 @@ súradníc a pre \(k\)-rozmerný KDTree slúži \texttt{KDPoint<K>} so
 zoznamom súradníc. Pri hľadaní bodu sa musia zhodovať všetky jeho
 súradnice podľa komparátora.
 
-Objekty s rovnakými súradnicami sa ukladajú do zoznamu hodnôt jedného
-uzla. Pri vyhľadávaní v oblasti sa započítajú aj body na jej okraji.
+Objekty s rovnakými súradnicami sa ukladajú do rovnakého uzla alebo listu.
+Pri vyhľadávaní v oblasti sa započítajú aj body na jej okraji.
 
-Vkladanie a hľadanie používajú cykly, pri prehľadávaní viacerých vetiev
-sa používa zásobník.
+Vkladanie a hľadanie používajú cykly. Pri prehľadávaní viacerých vetiev
+všetky tri vlastné stromy používajú zásobník.
 
 \section{KDTree}
 \texttt{KDTree<T,K>} rozdeľuje priestor postupne podľa jednej súradnice.
@@ -250,11 +250,17 @@ Pre pevné \(k\) je pamäťová náročnosť lineárna vzhľadom na počet uzlov
 a uložených hodnôt.
 
 \section{QuadTree}
-\texttt{QuadTree<T,K>} rozdeľuje rovinu na štyri kvadranty podľa bodu
-uzla (obrázok \ref{fig:quadrants}). Uzol obsahuje bod, jeho hodnoty
-a až štyroch potomkov. Pri vkladaní aj hľadaní bodu sa podľa súradníc
-vyberie príslušný kvadrant. Body na deliacej priamke patria napravo
-alebo nahor.
+\texttt{QuadTree<T,K>} rozdeľuje zadanú ohraničenú obdĺžnikovú oblasť
+na štyri kvadranty v jej strede. Pri delení uzla sa jeho vlastná oblasť
+rozdelí rovnakým spôsobom (obrázok \ref{fig:quadrants}). Pri vkladaní a hľadaní
+sa vyberie jeden kvadrant podľa stredu aktuálnej oblasti. Body na
+deliacej priamke patria napravo alebo nahor. Body s rovnakými
+súradnicami sa ukladajú spolu v liste.
+
+Pre POI je koreňová oblasť daná zemepisnými súradnicami:
+šírka \([-90,90]\), dĺžka \([-180,180]\). Vloženie bodu mimo nej sa
+odmietne. Pri hĺbke 32 sa ďalšie rozdielne body ukladajú v liste bez
+ďalšieho delenia.
 
 \begin{figure}[H]
 \centering
@@ -264,25 +270,31 @@ alebo nahor.
 \draw[dashed,diagramblue] (0,-3) -- (0,3);
 \draw[dashed,diagramblue] (-4,0) -- (4,0);
 \fill[red!80!black] (0,0) circle (2.5pt);
-\node[above left] at (-0.1,0.1) {\small uzol \((x_0,y_0)\)};
-\node at (-2,1.5) {\small \(x<x_0,\ y\geq y_0\)};
-\node at (2,1.5) {\small \(x\geq x_0,\ y\geq y_0\)};
-\node at (-2,-1.5) {\small \(x<x_0,\ y<y_0\)};
-\node at (2,-1.5) {\small \(x\geq x_0,\ y<y_0\)};
+\node[above left] at (-0.1,0.1) {\small stred oblasti};
+\node at (-2,1.5) {\small ľavý horný kvadrant};
+\node at (2,1.5) {\small pravý horný kvadrant};
+\node at (-2,-1.5) {\small ľavý dolný kvadrant};
+\node at (2,-1.5) {\small pravý dolný kvadrant};
 \draw[-{Latex[length=2mm]}, thick] (0,-3.35) -- (3.7,-3.35) node[right] {\small \(x\)};
 \draw[-{Latex[length=2mm]}, thick] (-4.35,0) -- (-4.35,2.7) node[above] {\small \(y\)};
 \end{tikzpicture}
-\caption{Rozdelenie do kvadrantov podľa súradníc uzla QuadTree}
+\caption{Rozdelenie oblasti QuadTree na štyri kvadranty v strede}
 \label{fig:quadrants}
 \end{figure}
 
 Pri vyhľadávaní v oblasti strom prechádza kvadranty, ktoré sa môžu
-prekrývať so zadanou oblasťou. Vkladanie a hľadanie bodu trvá \(O(h)\),
-vyhľadávanie v oblasti \(O(v+r)\), najviac \(O(n+r)\). Pamäťová
+prekrývať so zadanou oblasťou. Pri výške cesty \(h\) a počte \(b\)
+hodnôt v koncovom liste trvá hľadanie bodu \(O(h+b)\). Vkladanie bez
+delenia trvá amortizovane \(O(h)\), pri delení sa hodnoty listu
+prerozdeľujú, prípadne opakovane na viacerých úrovniach. Ak \(b\)
+označuje najväčší počet hodnôt v navštívenom liste, vkladanie trvá
+najviac \(O(h(b+1))\).
+Vyhľadávanie v oblasti trvá \(O(v+s)\), kde \(v\) je počet navštívených
+uzlov a \(s\) počet hodnôt skontrolovaných v ich listoch. Pamäťová
 náročnosť je lineárna vzhľadom na počet uzlov a hodnôt.
 
-Maximálna hĺbka je 32. Nový bod vyžadujúci hlbší uzol sa odmietne,
-k existujúcemu bodu možno pridať ďalšiu hodnotu.
+List sa nemusí deliť ani vtedy, ak stred kvôli presnosti súradníc neleží
+vo vnútri oboch rozmerov oblasti, ďalšie body zostávajú v liste.
 
 \section{QuadKDTree}
 \texttt{QuadKDTree<T,K>} kombinuje kvadrantové delenie s KDTree.
@@ -340,11 +352,11 @@ a uložených hodnôt.
 \toprule
 \textbf{Vlastnosť} & \textbf{KDTree} & \textbf{QuadTree} & \textbf{QuadKDTree}\\
 \midrule
-Rozdelenie priestoru & Striedanie súradnicových dimenzií & Kvadranty podľa bodu uzla & Kvadranty, KDTree v listoch\\
+Rozdelenie priestoru & Striedanie súradnicových dimenzií & Kvadranty podľa stredu bunky & Kvadranty, KDTree v listoch\\
 Dimenzie & \(k\) & 2 & 2\\
 Duplicitné body & Zoznam hodnôt v uzle & Zoznam hodnôt v uzle & Zoznam hodnôt v uzle KDTree\\
 Vyhľadávanie v oblasti & Výber vetiev podľa deliacej súradnice & Výber kvadrantov podľa oblasti & Výber kvadrantov a vyhľadávanie v KDTree listov\\
-Limity & -- & Hĺbka 32, nové body nad limit sa odmietajú & Hĺbka 32, delenie listu pri 33. rôznom bode\\
+Limity & -- & Hĺbka 32, ďalšie body zostávajú v liste & Hĺbka 32, delenie listu pri 33. rôznom bode\\
 \bottomrule
 \end{tabularx}
 \caption{Vlastnosti vlastných priestorových štruktúr}
@@ -395,14 +407,13 @@ nástroj mohol stromy používať rovnakým spôsobom.
 Vložené body vyhľadáva podľa polohy a výsledky hľadania v oblasti
 porovnáva s lineárnym prechodom prijatých bodov. Zo súborov
 \texttt{slovakia\_nodes.csv} a \texttt{testovacie\_oblasti.csv}
-načíta najviac 10\,000 bodov a 1\,000 oblastí.
+načíta trieda \texttt{LoadCSV} najviac 100\,000 bodov a 1\,000 oblastí.
 
 \section{Kontrola správnosti}
 Všetkých deväť konfigurácií prešlo kontrolami vyhľadávania.
 Pri kontrole vkladania a hľadania polohy sa vyberalo
 1\,000 bodov s opakovaním, pri hľadaní v oblasti sa použilo 10\,000
-bodov a 1\,000 oblastí. Vlastný QuadTree odmietol 4\,900 bodov pre limit
-hĺbky 32, preto sa výsledky porovnávali iba s prijatými bodmi.
+bodov a 100 oblastí. Vlastný QuadTree prijal všetkých 10\,000 bodov.
 
 \section{Metodika benchmarku a obmedzenia}
 \texttt{TreeBenchmark} meria vkladanie, hľadanie vložených bodov
@@ -415,9 +426,7 @@ použiť až 1\,000 oblastí na beh, v uvedenom meraní bolo použitých 100.
 
 \section{Výsledky testov}
 Tabuľka uvádza mediány piatich behov s 10\,000 vloženiami,
-10\,000 hľadaniami bodov a 100 dopytmi na oblasť na beh. Meranie sa
-uskutočnilo pred opravou počtu zahrievacích behov, po oprave sa benchmark
-znovu nespúšťal.
+10\,000 hľadaniami bodov a 100 dopytmi na oblasť na beh.
 
 \begin{table}[H]
 \centering
@@ -427,24 +436,24 @@ znovu nespúšťal.
 \textbf{Implementácia} & \textbf{Vkladanie} & \textbf{Hľadanie} &
 \textbf{Oblasť} & \textbf{Spolu}\\
 \midrule
-My KDTree & 5,266 & 5,056 & 0,512 & 10,833\\
-My QuadTree & 5,845 & 6,182 & 0,806 & 12,833\\
-My Quad-KDTree & 5,069 & 4,694 & 2,913 & 12,676\\
-Existing external KDTree & 6,242 & 6,264 & 21,801 & 34,307\\
-TinSpin KDTree & 4,254 & 25,984 & 0,446 & 30,683\\
-JTS KDTree & 11,958 & 13,796 & 0,325 & 26,078\\
-Varun Pant QuadTree & 4,171 & 4,316 & 0,069 & 8,557\\
-Alwex QuadTree & 18,314 & 128,441 & 5,067 & 151,822\\
-Ryan Pelletier QuadTree & 3,069 & 1\,139,936 & 10,828 & 1\,153,832\\
+My KDTree & 13,286 & 7,838 & 1,223 & 22,347\\
+My QuadTree & 12,656 & 5,461 & 0,680 & 18,797\\
+My Quad-KDTree & 20,988 & 8,702 & 1,126 & 30,816\\
+Existing external KDTree & 4,327 & 5,221 & 5,011 & 14,558\\
+TinSpin KDTree & 3,012 & 18,303 & 0,450 & 21,765\\
+JTS KDTree & 7,162 & 0,685 & 0,830 & 8,678\\
+Varun Pant QuadTree & 2,562 & 1,878 & 0,316 & 4,756\\
+Alwex QuadTree & 7,479 & 71,417 & 1,057 & 79,953\\
+Ryan Pelletier QuadTree & 1,980 & 441,413 & 4,824 & 448,216\\
 \bottomrule
 \end{tabularx}
-\caption{Výsledky benchmarku: mediány v milisekundách}
-\label{tab:historical-results}
+\caption{Výsledky benchmarku v milisekundách}
+\label{tab:benchmark-results}
 \end{table}
 
 Najnižší celkový čas v uvedenom meraní má Varun Pant Quadtree
-(8,557 ms). Spomedzi vlastných štruktúr dosiahol najnižší celkový čas
-KDTree (10,833 ms).
+(4,756 ms). Spomedzi vlastných štruktúr dosiahol najnižší celkový čas
+QuadTree (18,797 ms).
 
 \chapter{Aplikácia POI Manager}
 \label{chap:poi}
@@ -483,8 +492,6 @@ spustite:
 \begin{verbatim}
 mvn javafx:run
 \end{verbatim}
-K dispozícii je aj spustiteľná verzia aplikácie pre Windows vo formáte
-\texttt{.exe}.
 Po spustení vyberte v úvodnom dialógu KD Tree, Quad Tree alebo Quad KD
 Tree. V nasledujúcom kroku zvoľte \enquote{New file} a určte nový CSV
 súbor, alebo vyberte \enquote{Open file} a načítajte existujúci CSV
@@ -492,7 +499,7 @@ súbor s bodmi záujmu. Zvolený strom zostane aktívny počas celého behu apli
 zmeniť ho možno až po jej opätovnom spustení.
 
 Projekt obsahuje aj terminálové rozhranie \texttt{Console\allowbreak View},
-jeho spustenie je v \texttt{Main\allowbreak Application} zakomentované.
+ktoré spúšťa trieda \texttt{Main\allowbreak Application}.
 
 \section{Každodenná práca}
 \begin{enumerate}[leftmargin=1.5em]
@@ -509,10 +516,9 @@ jeho spustenie je v \texttt{Main\allowbreak Application} zakomentované.
 
 Výsledkom práce sú tri vlastné priestorové štruktúry, šesť externých
 adaptérov a aplikácia POI Manager, ktorá index využíva na hľadanie POI
-podľa polohy, oblasti a vzdialenosti. V zaznamenanom teste správnosti
-deväť konfigurácií prešlo kontrolami nad skúšobnou vzorkou, vlastný
-QuadTree však pre limit hĺbky odmietol časť bodov. Benchmarkové výsledky
-zaznamenávajú časy namerané pri použitom nastavení testu.
+podľa polohy, oblasti a vzdialenosti. Testovací nástroj umožňuje
+porovnať výsledky vyhľadávania jednotlivých štruktúr. Benchmarkové
+výsledky porovnávajú časy aktuálnych implementácií.
 
 \renewcommand{\bibname}{Zoznam použitej literatúry}
 \begin{thebibliography}{10}

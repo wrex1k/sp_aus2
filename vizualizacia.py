@@ -1,5 +1,7 @@
 ﻿"""
-Interaktívna vizualizácia KDTree, QuadTree a QuadKDTree (kopíruje logiku z Java kódu v sk.fri.structures).
+Interaktívna vizualizácia KDTree, QuadTree a QuadKDTree z sk.fri.structures.
+Pôvodný QuadTree je dostupný samostatne ako "QuadTree (stará – nie podľa zadania)".
+QuadKDTree zatiaľ delí podľa vloženého bodu, rovnako ako jeho Java implementácia.
 
 Spustenie:  python vizualizacia.py      (iba štandardný tkinter, nič sa neinštaluje)
 
@@ -207,8 +209,8 @@ class KDTree:
         rec(self.root, 0, *bounds)
 
 
-# ---------------------------------------------------------------- QuadTree
-class QuadNode:
+# ---------------------------------------------------------------- Pôvodný QuadTree
+class OldQuadNode:
     def __init__(self, value):
         self.point = value[1]
         self.values = [value]
@@ -222,8 +224,8 @@ class QuadNode:
         return f"{self.point} {n}".strip()
 
 
-class QuadTree:
-    name = "QuadTree"
+class OldQuadTree:
+    name = "QuadTree (stará – nie podľa zadania)"
 
     def __init__(self, log=noop):
         self.root = None
@@ -234,7 +236,7 @@ class QuadTree:
         p = value[1]
         self.path = []
         if self.root is None:
-            self.root = QuadNode(value)
+            self.root = OldQuadNode(value)
             self.path.append(self.root)
             self.log("  strom je prázdny -> bod sa stane koreňom")
             return True
@@ -251,7 +253,7 @@ class QuadTree:
                 return False
             q = quadrant(p, cur.point, self.log)
             if cur.children[q] is None:
-                cur.children[q] = QuadNode(value)
+                cur.children[q] = OldQuadNode(value)
                 self.log(f"    kvadrant {q} je prázdny -> vytvorím tam nový uzol")
                 return True
             self.log(f"    kvadrant {q} už existuje -> pokračujem do neho")
@@ -308,6 +310,135 @@ class QuadTree:
         rec(self.root, 0, 0, DOMAIN, DOMAIN)
         if self.range_query and self.root:
             draw_skipped(d, self.root, self.range_query)
+
+
+# ---------------------------------------------------------------- QuadTree
+class QuadNode:
+    def __init__(self, mn, mx):
+        self.min = mn
+        self.max = mx
+        self.center = ((mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2)
+        self.values = []
+        self.children = None
+
+    def kids(self):
+        if self.children is None:
+            return []
+        return [(str(i), child) for i, child in enumerate(self.children)]
+
+    def label(self):
+        x, y = self.center
+        if self.children is None:
+            return f"LIST {len(self.values)}\n({x:g}, {y:g})"
+        return f"STRED\n({x:g}, {y:g})"
+
+
+class QuadTree:
+    name = "QuadTree (v strede)"
+
+    def __init__(self, log=noop):
+        self.root = QuadNode((0, 0), (DOMAIN, DOMAIN))
+        self.log = log
+        self.path = []
+        self.range_query = None
+
+    def insert(self, value):
+        p = value[1]
+        self.path = []
+        if not contains(self.root.min, self.root.max, p):
+            self.log(f"  bod {p} je mimo koreňovej oblasti -> vloženie odmietnuté")
+            return False
+
+        node, depth = self.root, 0
+        while True:
+            self.path.append(node)
+            self.log(f"  oblasť {node.min} - {node.max}, stred {node.center}, hĺbka {depth}")
+            if node.children is None:
+                can_split = (node.min[0] < node.center[0] < node.max[0]
+                             and node.min[1] < node.center[1] < node.max[1])
+                duplicate = any(existing[1] == p for existing in node.values)
+                if not node.values or depth >= CFG["max_depth"] or not can_split or duplicate:
+                    node.values.append(value)
+                    self.log("    hodnota vložená do listu")
+                    return True
+                self.log(f"    delím oblasť v strede {node.center}")
+                self.split(node)
+
+            q = quadrant(p, node.center, self.log)
+            node = node.children[q]
+            depth += 1
+
+    def split(self, node):
+        x0, y0 = node.min
+        x1, y1 = node.max
+        cx, cy = node.center
+        node.children = [
+            QuadNode((x0, y0), (cx, cy)),
+            QuadNode((cx, y0), (x1, cy)),
+            QuadNode((x0, cy), (cx, y1)),
+            QuadNode((cx, cy), (x1, y1)),
+        ]
+        for value in node.values:
+            q = quadrant(value[1], node.center)
+            node.children[q].values.append(value)
+            self.log(f"      hodnota #{value[0]} {value[1]} -> kvadrant {q}")
+        node.values.clear()
+
+    def find(self, p):
+        self.path = []
+        if not contains(self.root.min, self.root.max, p):
+            self.log("  bod je mimo koreňovej oblasti")
+            return None
+
+        node = self.root
+        while node.children is not None:
+            self.path.append(node)
+            self.log(f"  stred oblasti {node.center}:")
+            node = node.children[quadrant(p, node.center, self.log)]
+        self.path.append(node)
+        matches = [value for value in node.values if value[1] == p]
+        self.log(f"  list {node.min} - {node.max}: {'nájdené' if matches else 'nenájdené'}")
+        return matches or None
+
+    @staticmethod
+    def intersects(node, mn, mx):
+        return (mx[0] >= node.min[0] and mn[0] <= node.max[0]
+                and mx[1] >= node.min[1] and mn[1] <= node.max[1])
+
+    def range_search(self, mn, mx):
+        self.path = []
+        matches = []
+        stack = [self.root]
+        while stack:
+            node = stack.pop()
+            if not self.intersects(node, mn, mx):
+                self.log(f"  oblasť {node.min} - {node.max} sa neprekrýva -> preskočená")
+                continue
+            self.path.append(node)
+            if node.children is None:
+                found = [value for value in node.values if contains(mn, mx, value[1])]
+                matches.extend(found)
+                self.log(f"  list {node.min} - {node.max}: {len(found)} hodnôt v oblasti")
+            else:
+                self.log(f"  oblasť {node.min} - {node.max}: prehľadám kvadranty")
+                stack.extend(node.children)
+        return matches
+
+    def draw_regions(self, d):
+        stack = [self.root]
+        while stack:
+            node = stack.pop()
+            if self.range_query and not self.intersects(node, *self.range_query):
+                d.shade(*node.min, *node.max)
+                continue
+            if node.children is None:
+                continue
+            x0, y0 = node.min
+            x1, y1 = node.max
+            cx, cy = node.center
+            d.line(cx, y0, cx, y1, "#888")
+            d.line(x0, cy, x1, cy, "#888")
+            stack.extend(node.children)
 
 
 # ---------------------------------------------------------------- QuadKDTree
@@ -478,7 +609,12 @@ class QuadKDTree:
             draw_skipped(d, self.root, self.range_query)
 
 
-STRUCTURES = {"KDTree": KDTree, "QuadTree": QuadTree, "QuadKDTree": QuadKDTree}
+STRUCTURES = {
+    "KDTree": KDTree,
+    "QuadTree (v strede)": QuadTree,
+    "QuadTree (stará – nie podľa zadania)": OldQuadTree,
+    "QuadKDTree": QuadKDTree,
+}
 
 
 # ---------------------------------------------------------------- GUI
@@ -531,9 +667,9 @@ class App:
 
         top = ttk.Frame(root)
         top.pack(fill="x", padx=6, pady=4)
-        self.struct_var = tk.StringVar(value="QuadTree")
+        self.struct_var = tk.StringVar(value="QuadTree (v strede)")
         ttk.Label(top, text="Štruktúra:").pack(side="left")
-        cb = ttk.Combobox(top, textvariable=self.struct_var, values=list(STRUCTURES), width=12, state="readonly")
+        cb = ttk.Combobox(top, textvariable=self.struct_var, values=list(STRUCTURES), width=31, state="readonly")
         cb.pack(side="left", padx=4)
         cb.bind("<<ComboboxSelected>>", lambda e: self.rebuild())
         self.mode = tk.StringVar(value="insert")
@@ -697,7 +833,12 @@ class App:
         else:
             self.tree.draw_regions(d)
 
-        path_pts = {n.point for n in self.tree.path}
+        path_pts = set()
+        for node in self.tree.path:
+            if isinstance(node, QuadNode):
+                path_pts.update(value[1] for value in node.values)
+            else:
+                path_pts.add(node.point)
         match_pts = {v[1] for v in self.matches}
         counts = {}
         for it in self.items:
