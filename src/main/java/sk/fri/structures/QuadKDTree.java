@@ -6,10 +6,13 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * A point-region tree whose leaves contain two-dimensional k-d trees.
+ * A quadrant tree whose leaves contain two-dimensional k-d trees.
+ * Leaves are split when a new distinct point exceeds their capacity,
+ * up to the maximum quadrant-tree depth.
  *
  * @param <T> type of stored value
  * @param <K> type of coordinates
@@ -18,11 +21,12 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
 
     private static final int LEAF_CAPACITY = 32;
     private static final int MAX_DEPTH = 32;
-
     private final Function<T, Point<K>> pointExtractor;
     private final Function<T, KDPoint<K>> kdPointExtractor;
     private final Comparator<K> comparator;
-
+    private final Point<K> min;
+    private final Point<K> max;
+    private final BiFunction<K, K, K> midpoint;
     private QuadKDNode<T, K> root;
 
     /**
@@ -31,23 +35,39 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      * @param pointExtractor function that extracts coordinates from an object
      * @param kdPointExtractor function that extracts coordinates as a KDPoint
      * @param comparator comparator used to compare coordinate values
+     * @param min minimum coordinates of the root region
+     * @param max maximum coordinates of the root region
+     * @param midpoint computes the midpoint between two coordinate values
      */
     public QuadKDTree(
             Function<T, Point<K>> pointExtractor,
             Function<T, KDPoint<K>> kdPointExtractor,
-            Comparator<K> comparator
+            Comparator<K> comparator,
+            Point<K> min,
+            Point<K> max,
+            BiFunction<K, K, K> midpoint
     ) {
         super("MyQuadKDTree");
+        if (comparator.compare(min.x(), max.x()) > 0
+                || comparator.compare(min.y(), max.y()) > 0) {
+            throw new IllegalArgumentException("Invalid quadtree configuration.");
+        }
         this.pointExtractor = pointExtractor;
         this.kdPointExtractor = kdPointExtractor;
         this.comparator = comparator;
+        this.min = min;
+        this.max = max;
+        this.midpoint = midpoint;
     }
 
     /**
      * Inserts an object into the tree.
+     * Objects with the same coordinates are stored together. A full leaf
+     * is split unless the maximum depth has been reached or the region cannot be split.
      *
      * @param value object to insert
-     * @return true if the object was inserted
+     * @return true if the object was inserted, or false if it is outside the root region
+     * @throws IllegalArgumentException if the extracted points do not have matching coordinates
      */
     @Override
     public boolean insert(T value) {
@@ -56,9 +76,12 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
 
         validatePoint(point, kdPoint);
 
+        if (!contains(min, max, point)) {
+            return false;
+        }
+
         if (root == null) {
-            root = newNode(value, point);
-            return true;
+            root = newNode(min, max);
         }
 
         QuadKDNode<T, K> current = root;
@@ -69,7 +92,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
                 boolean exists = current.data.find(kdPoint).isPresent();
 
                 if (exists || current.distinctPoints < LEAF_CAPACITY
-                        || depth >= MAX_DEPTH) {
+                        || depth >= MAX_DEPTH || !canSplit(current)) {
 
                     current.data.insert(value);
                     current.values.add(value);
@@ -84,15 +107,8 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
                 split(current);
             }
 
-            int quadrant = quadrant(point, current.point);
-            QuadKDNode<T, K> child = current.children.get(quadrant);
-
-            if (child == null) {
-                current.children.set(quadrant, newNode(value, point));
-                return true;
-            }
-
-            current = child;
+            int quadrant = quadrant(point, current.center);
+            current = current.children.get(quadrant);
             depth++;
         }
     }
@@ -103,6 +119,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      * @param point coordinates of the point to search for
      * @return an Optional containing the objects at the point,
      *         or an empty Optional if the point does not exist
+     * @throws IllegalArgumentException if the point is null
      */
     @Override
     public Optional<List<T>> find(Point<K> point) {
@@ -117,7 +134,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
                 return current.data.find(toKDPoint(point));
             }
 
-            current = current.children.get(quadrant(point, current.point));
+            current = current.children.get(quadrant(point, current.center));
         }
 
         return Optional.empty();
@@ -129,6 +146,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      * @param min minimum coordinates of the range
      * @param max maximum coordinates of the range
      * @return an Optional containing all matching objects
+     * @throws IllegalArgumentException if a bound is null or the minimum exceeds the maximum
      */
     @Override
     public Optional<List<T>> rangeSearch(Point<K> min, Point<K> max) {
@@ -155,7 +173,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
             for (int quadrant = 0; quadrant < 4; quadrant++) {
                 QuadKDNode<T, K> child = node.children.get(quadrant);
 
-                if (child != null && intersectsQuadrant(node.point, quadrant, min, max)) {
+                if (intersectsQuadrant(node.center, quadrant, min, max)) {
                     stack.push(child);
                 }
             }
@@ -167,36 +185,64 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
     /**
      * Creates a new leaf node.
      *
-     * @param value object to store
-     * @param point coordinates of the object
+     * @param min minimum coordinates of the region
+     * @param max maximum coordinates of the region
      * @return a new Quad-KD tree node
      */
-    private QuadKDNode<T, K> newNode(T value, Point<K> point) {
+    private QuadKDNode<T, K> newNode(Point<K> min, Point<K> max) {
+        Point<K> center = new Point<>(
+                midpoint.apply(min.x(), max.x()),
+                midpoint.apply(min.y(), max.y())
+        );
         return new QuadKDNode<>(
-                value,
-                point,
+                min,
+                max,
+                center,
                 kdPointExtractor,
                 comparator,
                 2
         );
     }
 
+    private boolean canSplit(QuadKDNode<T, K> node) {
+        return comparator.compare(node.center.x(), node.min.x()) > 0
+                && comparator.compare(node.center.x(), node.max.x()) < 0
+                && comparator.compare(node.center.y(), node.min.y()) > 0
+                && comparator.compare(node.center.y(), node.max.y()) < 0;
+    }
+
+    private boolean contains(Point<K> min, Point<K> max, Point<K> point) {
+        return comparator.compare(point.x(), min.x()) >= 0
+                && comparator.compare(point.x(), max.x()) <= 0
+                && comparator.compare(point.y(), min.y()) >= 0
+                && comparator.compare(point.y(), max.y()) <= 0;
+    }
+
     /**
      * Splits a leaf and redistributes its values into child nodes.
+     * The old leaf becomes an internal node after all values, including
+     * duplicates, have been inserted into the children's k-d trees.
      *
      * @param node leaf node to split
      */
     private void split(QuadKDNode<T, K> node) {
+        Point<K> bottomCenter = new Point<>(node.center.x(), node.min.y());
+        Point<K> leftCenter = new Point<>(node.min.x(), node.center.y());
+        Point<K> rightCenter = new Point<>(node.max.x(), node.center.y());
+        Point<K> topCenter = new Point<>(node.center.x(), node.max.y());
+
+        node.children = List.of(
+                newNode(node.min, node.center),
+                newNode(bottomCenter, rightCenter),
+                newNode(leftCenter, topCenter),
+                newNode(node.center, node.max)
+        );
+
         for (T value : node.values) {
             Point<K> point = pointExtractor.apply(value);
-            int quadrant = quadrant(point, node.point);
+            int quadrant = quadrant(point, node.center);
 
             QuadKDNode<T, K> child = node.children.get(quadrant);
-
-            if (child == null) {
-                node.children.set(quadrant, newNode(value, point));
-                continue;
-            }
 
             KDPoint<K> kdPoint = kdPointExtractor.apply(value);
             boolean exists = child.data.find(kdPoint).isPresent();
@@ -219,7 +265,8 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      *
      * @param point two-dimensional point
      * @param kdPoint k-d tree point
-     * @throws IllegalArgumentException if coordinates do not match
+     * @throws IllegalArgumentException if either point is null, the k-d point
+     *         is not two-dimensional, or their coordinates do not match
      */
     private void validatePoint(Point<K> point, KDPoint<K> kdPoint) {
         if (point == null || kdPoint == null
@@ -277,6 +324,7 @@ public class QuadKDTree<T, K> extends SpatialTree<T, Point<K>> {
      *
      * @param min minimum coordinates of the range
      * @param max maximum coordinates of the range
+     * @throws IllegalArgumentException if a bound is null or the minimum exceeds the maximum
      */
     private void validateRange(Point<K> min, Point<K> max) {
         if (min == null || max == null

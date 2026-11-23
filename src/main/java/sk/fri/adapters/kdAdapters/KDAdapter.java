@@ -11,6 +11,12 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
+/**
+ * Adapts the external KD tree to the spatial tree interface.
+ *
+ * @param <T> type of stored values
+ * @param <K> type of coordinates
+ */
 public final class KDAdapter<T, K> extends SpatialTree<T, Point<K>> {
     private final KDtree<StoredValue<T>, DataTypes.Point> tree =
             new KDtree<StoredValue<T>, DataTypes.Point>(2);
@@ -18,6 +24,12 @@ public final class KDAdapter<T, K> extends SpatialTree<T, Point<K>> {
     private final ToDoubleFunction<K> coordinateToDouble;
     private final List<T> insertedValues = new ArrayList<>();
 
+    /**
+     * Creates an adapter with coordinate extraction and conversion functions.
+     *
+     * @param pointExtractor extracts a point from a value
+     * @param coordinateToDouble converts a coordinate to a double
+     */
     public KDAdapter(
             Function<T, Point<K>> pointExtractor,
             ToDoubleFunction<K> coordinateToDouble
@@ -44,6 +56,16 @@ public final class KDAdapter<T, K> extends SpatialTree<T, Point<K>> {
         return Optional.of(values.stream().map(StoredValue::value).toList());
     }
 
+    /**
+     * Finds values in a rectangular range by scanning inserted values.
+     *
+     * @param minX minimum x coordinate
+     * @param minY minimum y coordinate
+     * @param maxX maximum x coordinate
+     * @param maxY maximum y coordinate
+     * @return matching values, including points on the bounds
+     * @throws IllegalArgumentException if a minimum exceeds its maximum
+     */
     public List<T> rangeSearch(double minX, double minY, double maxX, double maxY) {
         if (minX > maxX || minY > maxY) {
             throw new IllegalArgumentException("Minimum range coordinates must not exceed maximum coordinates.");
@@ -71,6 +93,7 @@ public final class KDAdapter<T, K> extends SpatialTree<T, Point<K>> {
         ));
     }
 
+    /** Converts a point to the external KD tree's coordinate type. */
     private DataTypes.Point toExternalPoint(Point<K> point) {
         return new DataTypes.Point(
                 coordinateToDouble.applyAsDouble(point.x()),
@@ -78,6 +101,7 @@ public final class KDAdapter<T, K> extends SpatialTree<T, Point<K>> {
         );
     }
 
+    /** Wraps a value and its point for the external KD tree. */
     private static final class StoredValue<T> implements ITreeData<StoredValue<T>, DataTypes.Point> {
         private final T value;
         private final DataTypes.Point point;

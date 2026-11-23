@@ -13,12 +13,20 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
+/**
+ * Adapts the Alwex QuadTree to the spatial tree interface.
+ *
+ * @param <T> type of stored values
+ * @param <K> type of coordinates
+ */
 public final class AlwexQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
     private static final float POINT_SIZE = 0.000001f;
 
+    /** Identifies a point after conversion to double coordinates. */
     private record Coordinates(double x, double y) {
     }
 
+    /** Groups values at one coordinate for insertion into the QuadTree. */
     private static final class Entry<T> {
         private final double x;
         private final double y;
@@ -39,6 +47,12 @@ public final class AlwexQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
     private final ToDoubleFunction<K> coordinateToDouble;
     private final Map<Coordinates, Entry<T>> entries = new HashMap<>();
 
+    /**
+     * Creates an adapter with coordinate extraction and conversion functions.
+     *
+     * @param pointExtractor extracts a point from a value
+     * @param coordinateToDouble converts a coordinate to a double
+     */
     public AlwexQuadTreeAdapter(Function<T, Point<K>> pointExtractor, ToDoubleFunction<K> coordinateToDouble) {
         super("Alwex QuadTree");
         this.pointExtractor = pointExtractor;
@@ -72,6 +86,16 @@ public final class AlwexQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
         return values.isEmpty() ? Optional.empty() : Optional.of(values);
     }
 
+    /**
+     * Finds values in a rectangular range with inclusive bounds.
+     *
+     * @param minX minimum x coordinate
+     * @param minY minimum y coordinate
+     * @param maxX maximum x coordinate
+     * @param maxY maximum y coordinate
+     * @return matching values
+     * @throws IllegalArgumentException if a minimum exceeds its maximum
+     */
     public List<T> rangeSearch(double minX, double minY, double maxX, double maxY) {
         validateRange(minX, minY, maxX, maxY);
         List<Entry<T>> candidates = tree.getElements(
@@ -101,6 +125,7 @@ public final class AlwexQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
         ));
     }
 
+    /** Converts a generic point to double coordinates. */
     private Coordinates coordinates(Point<K> point) {
         return new Coordinates(
                 coordinateToDouble.applyAsDouble(point.x()),
@@ -108,6 +133,7 @@ public final class AlwexQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
         );
     }
 
+    /** Rejects ranges whose minimum exceeds their maximum. */
     private static void validateRange(double minX, double minY, double maxX, double maxY) {
         if (minX > maxX || minY > maxY) {
             throw new IllegalArgumentException("Minimum range coordinates must not exceed maximum coordinates.");

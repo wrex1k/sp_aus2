@@ -1,7 +1,6 @@
 package sk.fri.structures;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -38,50 +37,53 @@ final class KDNode<T, K> extends Node<KDPoint<K>> {
 }
 
 /**
- * Node of a QuadTree, stores one object with its position
- * and references to four (north-west, north-east, south-west, south-east) children.
+ * Quadtree cell with bounds, stored points and optional quadrant children.
  *
  * @param <T> type of stored value
  * @param <K> type of coordinates
  */
-final class QuadNode<T, K> extends Node<Point<K>> {
+final class QuadNode<T, K> {
 
+    final Point<K> min;
+    final Point<K> max;
+    final Point<K> center;
     final List<T> values = new ArrayList<>();
-    final List<QuadNode<T, K>> children = new ArrayList<>(Collections.nCopies(4, null));
+    List<QuadNode<T, K>> children;
 
-    QuadNode(T value, Point<K> point) {
-        super(point);
-        values.add(value);
+    QuadNode(Point<K> min, Point<K> max, Point<K> center) {
+        this.min = min;
+        this.max = max;
+        this.center = center;
     }
 }
 
 /**
  * Node of a QuadTree whose leaves store values in a k-d tree.
  */
-final class QuadKDNode<T, K> extends Node<Point<K>> {
+final class QuadKDNode<T, K> {
 
+    final Point<K> min;
+    final Point<K> max;
+    final Point<K> center;
     KDTree<T, K> data;
     List<T> values;
     int distinctPoints;
 
-    final List<QuadKDNode<T, K>> children =
-            new ArrayList<>(Collections.nCopies(4, null));
+    List<QuadKDNode<T, K>> children;
 
     QuadKDNode(
-            T value,
-            Point<K> point,
+            Point<K> min,
+            Point<K> max,
+            Point<K> center,
             Function<T, KDPoint<K>> pointExtractor,
             Comparator<K> comparator,
             int dimensions
     ) {
-        super(point);
+        this.min = min;
+        this.max = max;
+        this.center = center;
 
         data = new KDTree<>(pointExtractor, comparator, dimensions);
-        data.insert(value);
-
         values = new ArrayList<>();
-        values.add(value);
-
-        distinctPoints = 1;
     }
 }

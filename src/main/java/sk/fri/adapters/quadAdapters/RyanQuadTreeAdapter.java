@@ -13,7 +13,14 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
+/**
+ * Adapts the Ryan Pelletier QuadTree to the spatial tree interface.
+ *
+ * @param <T> type of stored values
+ * @param <K> type of coordinates
+ */
 public final class RyanQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
+    /** Wraps a value as a zero-size rectangle for the external QuadTree. */
     private static final class Entry<T> extends AbstractRectangleObject {
         private final T value;
 
@@ -28,6 +35,12 @@ public final class RyanQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
     private final Function<T, Point<K>> pointExtractor;
     private final ToDoubleFunction<K> coordinateToDouble;
 
+    /**
+     * Creates an adapter with coordinate extraction and conversion functions.
+     *
+     * @param pointExtractor extracts a point from a value
+     * @param coordinateToDouble converts a coordinate to a double
+     */
     public RyanQuadTreeAdapter(Function<T, Point<K>> pointExtractor, ToDoubleFunction<K> coordinateToDouble) {
         super("Ryan Pelletier QuadTree");
         this.pointExtractor = pointExtractor;
@@ -54,6 +67,16 @@ public final class RyanQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
         return values.isEmpty() ? Optional.empty() : Optional.of(values);
     }
 
+    /**
+     * Finds values in a rectangular range with inclusive bounds.
+     *
+     * @param minX minimum x coordinate
+     * @param minY minimum y coordinate
+     * @param maxX maximum x coordinate
+     * @param maxY maximum y coordinate
+     * @return matching values
+     * @throws IllegalArgumentException if a minimum exceeds its maximum
+     */
     public List<T> rangeSearch(double minX, double minY, double maxX, double maxY) {
         validateRange(minX, minY, maxX, maxY);
         List<T> matches = new ArrayList<>();
@@ -82,6 +105,7 @@ public final class RyanQuadTreeAdapter<T, K> extends SpatialTree<T, Point<K>> {
         return Optional.of(rangeSearch(minX, minY, maxX, maxY));
     }
 
+    /** Rejects ranges whose minimum exceeds their maximum. */
     private static void validateRange(double minX, double minY, double maxX, double maxY) {
         if (minX > maxX || minY > maxY) {
             throw new IllegalArgumentException("Minimum range coordinates must not exceed maximum coordinates.");

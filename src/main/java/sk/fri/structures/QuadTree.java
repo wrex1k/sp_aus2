@@ -1,6 +1,12 @@
 package sk.fri.structures;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -12,22 +18,35 @@ import java.util.function.Function;
  * @param <K> type of coordinates, for example: Double
  */
 public class QuadTree<T, K> extends SpatialTree<T, Point<K>> {
+    private static final int MAX_DEPTH = 32;
+
     private final Function<T, Point<K>> pointExtractor;
     private final Comparator<K> comparator;
-    private QuadNode<T, K> root;
-
-    private static final int MAX_DEPTH = 32;
+    private final BiFunction<K, K, K> midpoint;
+    private final QuadNode<T, K> root;
 
     /**
      * Creates an empty QuadTree.
      *
      * @param pointExtractor function that extracts coordinates from an object
      * @param comparator comparator used to compare coordinate values
+     * @param min minimum coordinates of the root region
+     * @param max maximum coordinates of the root region
+     * @param midpoint computes the midpoint between two coordinate values
      */
-    public QuadTree(Function<T, Point<K>> pointExtractor, Comparator<K> comparator) {
+    public QuadTree(Function<T, Point<K>> pointExtractor, Comparator<K> comparator, Point<K> min, Point<K> max, BiFunction<K, K, K> midpoint
+    ) {
         super("MyQuadTree");
+        if (comparator.compare(min.x(), max.x()) > 0
+                || comparator.compare(min.y(), max.y()) > 0) {
+            throw new IllegalArgumentException("Invalid quadtree configuration.");
+        }
+
         this.pointExtractor = pointExtractor;
         this.comparator = comparator;
+        this.midpoint = midpoint;
+        Point<K> center = center(min, max);
+        root = new QuadNode<>(min, max, center);
     }
 
     /**
@@ -36,37 +55,33 @@ public class QuadTree<T, K> extends SpatialTree<T, Point<K>> {
      * the new object is added to that node's list of values.
      *
      * @param value object to insert
-     * @return true if the object was inserted, or false if the maximum depth was reached
+     * @return true if the object was inserted, or false if it is outside the root region
      */
     @Override
     public boolean insert(T value) {
         Point<K> point = pointExtractor.apply(value);
-
-        if (root == null) {
-            root = new QuadNode<>(value, point);
-            return true;
+        if (!contains(root.min, root.max, point)) {
+            return false;
         }
 
         QuadNode<T, K> current = root;
         int depth = 0;
         while (true) {
-            if (isSame(current.point, point)) {
-                current.values.add(value);
-                return true;
+            if (current.children == null) {
+                if (current.values.isEmpty() || depth >= MAX_DEPTH || !canSplit(current)) {
+                    current.values.add(value);
+                    return true;
+                }
+
+                if (isSame(pointExtractor.apply(current.values.getFirst()), point)) {
+                    current.values.add(value);
+                    return true;
+                }
+
+                split(current);
             }
 
-            if (depth >= MAX_DEPTH) {
-                return false;
-            }
-
-            int q = quadrant(current.point, point);
-
-            if (current.children.get(q) == null) {
-                current.children.set(q, new QuadNode<>(value, point));
-                return true;
-            }
-
-            current = current.children.get(q);
+            current = current.children.get(quadrant(current.center, point));
             depth++;
         }
     }
@@ -80,22 +95,26 @@ public class QuadTree<T, K> extends SpatialTree<T, Point<K>> {
      */
     @Override
     public Optional<List<T>> find(Point<K> point) {
-        QuadNode<T, K> current = root;
-
-        while (current != null) {
-            if (isSame(current.point, point)) {
-                return Optional.of(current.values);
-            }
-
-            current = current.children.get(quadrant(current.point, point));
+        if (!contains(root.min, root.max, point)) {
+            return Optional.empty();
         }
 
-        return Optional.empty();
+        QuadNode<T, K> node = root;
+        while (node.children != null) {
+            node = node.children.get(quadrant(node.center, point));
+        }
+        List<T> matches = new ArrayList<>();
+        for (T value : node.values) {
+            if (isSame(pointExtractor.apply(value), point)) {
+                matches.add(value);
+            }
+        }
+        return matches.isEmpty() ? Optional.empty() : Optional.of(matches);
     }
 
     /**
      * Searches for all objects within the specified rectangular range.
-     * Uses an iterative traversal with a stack to avoid recursion.
+     * Uses an iterative traversal with a stack.
      *
      * @param min minimum coordinates of the search range
      * @param max maximum coordinates of the search range
@@ -113,56 +132,62 @@ public class QuadTree<T, K> extends SpatialTree<T, Point<K>> {
         }
 
         while (!stack.isEmpty()) {
-            QuadNode<T, K> current = stack.pop();
-
-            if (contains(min, max, current.point)) {
-                matches.addAll(current.values);
+            QuadNode<T, K> node = stack.pop();
+            if (!intersects(node, min, max)) {
+                continue;
             }
-
-            for (int quadrant = 0; quadrant < current.children.size(); quadrant++) {
-                QuadNode<T, K> child = current.children.get(quadrant);
-
-                if (child != null && intersectsQuadrant(current.point, quadrant, min, max)) {
+            if (node.children == null) {
+                for (T value : node.values) {
+                    if (contains(min, max, pointExtractor.apply(value))) {
+                        matches.add(value);
+                    }
+                }
+            } else {
+                for (QuadNode<T, K> child : node.children) {
                     stack.push(child);
                 }
             }
         }
-
         return Optional.of(matches);
     }
 
-    /**
-     * Checks whether the specified search range intersects a quadrant.
-     *
-     * @param center center point of the current node
-     * @param quadrant quadrant index from 0 to 3
-     * @param min minimum coordinates of the search range
-     * @param max maximum coordinates of the search range
-     * @return true if the search range intersects the quadrant
-     */
-    private boolean intersectsQuadrant(Point<K> center, int quadrant, Point<K> min, Point<K> max) {
-        boolean intersectsX = (quadrant & 1) == 0
-                ? comparator.compare(min.x(), center.x()) < 0
-                : comparator.compare(max.x(), center.x()) >= 0;
+    private void split(QuadNode<T, K> node) {
+        Point<K> bottomCenter = new Point<>(node.center.x(), node.min.y());
+        Point<K> leftCenter = new Point<>(node.min.x(), node.center.y());
+        Point<K> rightCenter = new Point<>(node.max.x(), node.center.y());
+        Point<K> topCenter = new Point<>(node.center.x(), node.max.y());
 
-        boolean intersectsY = (quadrant & 2) == 0
-                ? comparator.compare(min.y(), center.y()) < 0
-                : comparator.compare(max.y(), center.y()) >= 0;
+        // South-west, south-east, north-west, north-east.
+        node.children = List.of(
+                newNode(node.min, node.center),
+                newNode(bottomCenter, rightCenter),
+                newNode(leftCenter, topCenter),
+                newNode(node.center, node.max)
+        );
 
-        return intersectsX && intersectsY;
+        for (T value : node.values) {
+            Point<K> point = pointExtractor.apply(value);
+            node.children.get(quadrant(node.center, point)).values.add(value);
+        }
+        node.values.clear();
     }
 
-    /**
-     * Validates that the minimum coordinates do not exceed the maximum coordinates.
-     *
-     * @param min minimum coordinates of the search range
-     * @param max maximum coordinates of the search range
-     * @throws IllegalArgumentException if any minimum coordinate exceeds its maximum
-     */
-    private void validateRange(Point<K> min, Point<K> max) {
-        if (comparator.compare(min.x(), max.x()) > 0 || comparator.compare(min.y(), max.y()) > 0) {
-            throw new IllegalArgumentException("Minimum range coordinates must not exceed maximum coordinates.");
-        }
+    private QuadNode<T, K> newNode(Point<K> min, Point<K> max) {
+        return new QuadNode<>(min, max, center(min, max));
+    }
+
+    private Point<K> center(Point<K> min, Point<K> max) {
+        return new Point<>(
+                midpoint.apply(min.x(), max.x()),
+                midpoint.apply(min.y(), max.y())
+        );
+    }
+
+    private boolean canSplit(QuadNode<T, K> node) {
+        return comparator.compare(node.center.x(), node.min.x()) > 0
+                && comparator.compare(node.center.x(), node.max.x()) < 0
+                && comparator.compare(node.center.y(), node.min.y()) > 0
+                && comparator.compare(node.center.y(), node.max.y()) < 0;
     }
 
     /**
@@ -179,6 +204,13 @@ public class QuadTree<T, K> extends SpatialTree<T, Point<K>> {
                 && comparator.compare(point.x(), max.x()) <= 0
                 && comparator.compare(point.y(), min.y()) >= 0
                 && comparator.compare(point.y(), max.y()) <= 0;
+    }
+
+    private boolean intersects(QuadNode<T, K> node, Point<K> min, Point<K> max) {
+        return comparator.compare(max.x(), node.min.x()) >= 0
+                && comparator.compare(min.x(), node.max.x()) <= 0
+                && comparator.compare(max.y(), node.min.y()) >= 0
+                && comparator.compare(min.y(), node.max.y()) <= 0;
     }
 
     /**
@@ -213,5 +245,20 @@ public class QuadTree<T, K> extends SpatialTree<T, Point<K>> {
         }
 
         return index;
+    }
+
+    /**
+     * Validates that the minimum coordinates do not exceed the maximum coordinates.
+     *
+     * @param min minimum coordinates of the search range
+     * @param max maximum coordinates of the search range
+     * @throws IllegalArgumentException if a bound is null or any minimum coordinate exceeds its maximum
+     */
+    private void validateRange(Point<K> min, Point<K> max) {
+        if (min == null || max == null
+                || comparator.compare(min.x(), max.x()) > 0
+                || comparator.compare(min.y(), max.y()) > 0) {
+            throw new IllegalArgumentException("Invalid search range.");
+        }
     }
 }

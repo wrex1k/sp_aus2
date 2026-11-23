@@ -37,3 +37,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Large POI datasets
+src/main/resources/csv/*.csv
